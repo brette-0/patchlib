@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ipsluna"
+version = "1.0"
+authors = [
+  { name="Brette", email="benissoflippinghot@gmail.com" },
+]
+description = "Versatile IPS patch handling Module"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/BenfromNESUniverse/ipsluna"
+"Bug Tracker" = "https://github.com/BenfromNESUniverse/ipsluna/issues"
+"Discord" = "https://discord.gg/3DYCru4dCV"
