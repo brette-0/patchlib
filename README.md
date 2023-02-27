@@ -15,7 +15,7 @@ Since the file is an unprocessed `bytearray`, `ipsluna` supports the function `n
 patch = normalize(patch)
 for instance in patch.items():
 	print(instance)
->>> (0xABCD,0xFE)	  #For nonRLE instances
+>>> (0xABCD,0xFE)	  		#For nonRLE instances
 >>> (0xABCDE:(0xEF,4))#For RLE instances
 ```
 RLE, or Run Length Encoding, instances store the run length at position `1` in the `tuple` and the `byte` specified at position `0`.
@@ -24,45 +24,47 @@ This data *should* be chronologically ordered as all working IPS file should be,
 def checkNormalized(keys : dict_keys):
 	keys = (list(keys),len(dict_keys)-1)
 	for key in range(keys(1)):
-			if keys[key] > keys[key+1]
+		if keys[key] > keys[key+1]:
 			return False
 	else:
-			return True
+		return True
 ```
 Or if you cannot be bothered to test a working file, simply use:
 ```python
 try:
 	#do ips functions here, error will be reported below
 except error:
-	print(error) #log error in shell, may not be ips fault
+	print(error) 			#log error in shell, may not be ips fault
 ```
 Once we can assume a normalized IPS dictionary we create a custom class for said IPS file with:
 ```python
-patch = ips(patch)	#create instance of patch class using normalized dictionary
+patch = ips(patch)			#create instance of patch class using normalized dictionary
 ```
 From this we can understand the patch in more detail:
 ```python
-print(len(patch.instances))	#This will show us how many patch instances there are
->>> 321		#This tells there are 321 patch instances in this file
+print(len(patch.instances))		#This will show us how many patch instances there are
+>>> 321					#This tells there are 321 patch instances in this file
 print(patch.instances[-1].offest + patch.instances[-1].size)
->>> 40016	#This tells us the last byte the patch wrote to
+>>> 40016				#This tells us the last byte the patch wrote to
 ```
 Other than just metadata commands, the `instance` object stores some interesting data itself.
 ```python
 example = patch.instances[0]	#obtain first patch instance
 print(example.offset)	#Find where in memory we are modifying in this patch instance
 >>> 16400
-print(example.rle)		#Is this an rle byte?
+print(example.rle)			#Is this an rle byte?
 >>> True 				#Yes it is!
-print(example.data)		#what is the data?
->>> (b"\x42",4)			#It is 0x42 four times!
-print(example.verbose)	#Has this patch been made with verbose data access?
+print(example.data)			#what is the data?
+>>> (b"\x42",4)				#It is 0x42 four times!
+print(example.verbose)			#Has this patch been made with verbose data access?
 >>> False 				#This means that RLE can not be read as noRLE, this is more efficient by memory.
-example.give((b"\x32",9))	#This replaces the example instance contents with the Nine length 0x32 RLE Bytes
-example.give(b"\x23\x54\x25")#This may also take noRLE
+example.give((b"\x32",9))		#This replaces the example instance contents with the Nine length 0x32 RLE Bytes
+example.give(b"\x23\x54\x25")		#This may also take noRLE
+
 #Example also has give_RLE and give_noRLE was faster writes
-example.noRLE()	#removes the RLE in order to speed up patching process (not data efficient)
-example.give_name("example patch") #This gives a patch a name, allowing for easier legitbility when being viewed later.
+
+example.noRLE()				#removes the RLE in order to speed up patching process (not data efficient)
+example.give_name("example patch") 	#This gives a patch a name, allowing for easier legitbility when being viewed later.
 ```
 IPS files are build on these instances, they make up how the file functions, describing the `offset`, `size` and `data` of the `instance` contents. 
 
