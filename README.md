@@ -19,23 +19,6 @@ for instance in patch.items():
 >>> (0xABCDE:(0xEF,4))#For RLE instances
 ```
 RLE, or Run Length Encoding, instances store the run length at position `1` in the `tuple` and the `byte` specified at position `0`.
-This data *should* be chronologically ordered as all working IPS file should be, a quick check with:
-```python
-def checkNormalized(keys : dict_keys):
-	keys = (list(keys),len(dict_keys)-1)
-	for key in range(keys(1)):
-		if keys[key] > keys[key+1]:
-			return False
-	else:
-		return True
-```
-Or if you cannot be bothered to test a working file, simply use:
-```python
-try:
-	#do ips functions here, error will be reported below
-except error:
-	print(error) 			#log error in shell, may not be ips fault
-```
 Once we can assume a normalized IPS dictionary we create a custom class for said IPS file with:
 ```python
 patch = ips(patch)			#create instance of patch class using normalized dictionary
