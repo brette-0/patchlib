@@ -267,9 +267,9 @@ class ips():
         else:
             self.instances.remove(patch)    #Python will raise error by missing value
     def move(self, Instance : instance, offset : int,override):
-        if type(patch) == str | int:
+        if isinstance(Instance,(str,int)):
             patch = self.get_instance(patch)
-        if type(Instance) != instance:
+        if not isinstance(Instance,instance):
             raise Exception(f"Type Error : {Instance} is not an instance.")
         if Instance not in self.instances:
             raise Exception(f"Key Error : {Instance} is not an instance in this class")
@@ -295,18 +295,18 @@ def build(base : bytes | bytearray, prepatch : bytes,legal : bool = True) -> byt
         :raises ScopeError: if modified file is unsuitabel for IPS generation
         :raises FileError: if IPS file bytes or bytearray contains illegal data.
         """
-        if type(prepatch) != bytes | bytearray:
+        if not isinstance(prepatch,(bytes,bytearray)):
             raise TypeError("Modified file must be bytes or bytearray") #no solution
-        if type(base) != bytes | bytearray:
+        if not isinstance(base,(bytes,bytearray)):
             raise TypeError("Original file must be bytes or bytearray") #no solution
-        if type(legal) != bool:
+        if not isinstance(legal,bool):
             raise TypeError("`Legal` file must be Type `bool`")         #no solution
         if len(prepatch) > 16842750:
             raise ScopeError("Modified file has data beyond target!")   #solution would be to split and append data
         elif len(prepatch) < len(base):
             raise ScopeError("Modified file is smaller than Original!") #solution would be to trim original to size of modded.
-        try:            
-            count = 0        
+        if 1:            
+            count = 0;build=b""        
             while count != len(prepatch):
                 if count == len(prepatch)-1:
                     build += i2b(count,3)+b"\x00\x01"+bytes([prepatch[count]])
@@ -336,8 +336,6 @@ def build(base : bytes | bytearray, prepatch : bytes,legal : bool = True) -> byt
                     build += i2b(count,3)+i2b(length,2)+prepatch[count:count+length]
                     count += length
             return b"PATCH"+build+b"EOF" #return bytearray of IPS file
-        except: 
-            raise FileError("IPS file structure is invalid!")
 
 def apply(patch : ips, base : bytes | bytearray) -> bytearray:
         """
