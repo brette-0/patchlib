@@ -75,7 +75,7 @@ class instance():
             raise ScopeError("Offset exceeds limitations of IPS")
         if offset < 0:
             raise ScopeError("Offset is below zero and therefore impossible!")
-        if type(name) != str and str != None:
+        if type(name) != str and name != None:
             raise TypeError("Given name is not of type string and is therefore unsuitable")
         self.rle,self.offset,self.data = type(data) == tuple,offset,data 
         self.size = data[1] if self.rle else len(data)
