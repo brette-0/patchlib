@@ -71,7 +71,7 @@ class instance():
             raise FileError("Tuple has invalid data!")
         if type(offset) != int:
             raise TypeError("Offset is not integral!")
-        if offset > 0xFFFF:
+        if offset > 0xFFFFFF:
             raise ScopeError("Offset exceeds limitations of IPS")
         if offset < 0:
             raise ScopeError("Offset is below zero and therefore impossible!")
