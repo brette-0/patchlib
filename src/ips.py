@@ -65,8 +65,10 @@ class instance():
         :raises TypeError: if name is not string or None
         :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
         """
-        if type(data) != bytes | bytearray | tuple:
+        if not isinstance(data,(bytes,bytearray,tuple))::
             raise TypeError("Instance data is invalid!")
+        if len(data) != 2 if isinstance(data,tuple) else False:
+            raise FileError("Tuple has invalid data!")
         if type(offset) != int:
             raise TypeError("Offset is not integral!")
         if offset > 0xFFFF:
@@ -107,7 +109,7 @@ class instance():
         :raises ScopeError: if length is over 0xFF or less than zero.
         :raises ScopeError: if length of `byte` is does not equal one.
         """
-        if type(byte) != bytes | bytearray:
+        if if not isinstance(byte,(bytes,bytearray))::
             raise TypeError(f"Type Error : {byte} is not bytes or bytearray object.")
         if type(length) != int:
             raise TypeError(f"Type Error : {length} is not integer")
@@ -130,7 +132,7 @@ class instance():
         :raises TypeError: if data is not of type `bytes` or `bytearray`
         :raises ScopeError: if length of data is over 0xFFFF or less than zero.
         """
-        if type(data) != bytes | bytearray:
+        if not isinstance(base,(bytes,bytearray)):
             raise TypeError(f"Given data is not bytes or bytearray type!")
         if len(data) > 0xFFFF or len(data) < 0:
             raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
@@ -150,7 +152,7 @@ class instance():
         """
         if type(data) == tuple:
             return self.give_RLE(data) 
-        if type(data) == bytes | bytearray: 
+        if not isinstance(data,(bytes,bytearray)):: 
             return self.give_noRLE(data)
         else:
             raise TypeError("Unexpected type for data!")
@@ -258,7 +260,7 @@ class ips():
         :raises TypeError: if nor str, int or instance is provided
         :raises KeyError: if patch is not present in ips
         """
-        if type(patch) == str | int:
+        if if not isinstance(patch,(str,int))::
             patch = self.get_instance(patch)
         if type(patch) != instance:
             raise TypeError("given patch is not an instance.")
@@ -352,7 +354,7 @@ def apply(patch : ips, base : bytes | bytearray) -> bytearray:
         try:
             if type(patch) != ips:
                 raise TypeError("IPS given is not of type ips!")
-            if type(base) != bytes | bytearray:
+            if not isinstance(base,(bytes,bytearray)):
                 raise TypeError("base given is not of type bytes or bytearray!")
             build = b""
             for instance in patch.instances:      
