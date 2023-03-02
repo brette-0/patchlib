@@ -65,7 +65,7 @@ class instance():
         :raises TypeError: if name is not string or None
         :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
         """
-        if not isinstance(data,(bytes,bytearray,tuple))::
+        if not isinstance(data,(bytes,bytearray,tuple)):
             raise TypeError("Instance data is invalid!")
         if len(data) != 2 if isinstance(data,tuple) else False:
             raise FileError("Tuple has invalid data!")
@@ -109,7 +109,7 @@ class instance():
         :raises ScopeError: if length is over 0xFF or less than zero.
         :raises ScopeError: if length of `byte` is does not equal one.
         """
-        if if not isinstance(byte,(bytes,bytearray))::
+        if not isinstance(byte,(bytes,bytearray)):
             raise TypeError(f"Type Error : {byte} is not bytes or bytearray object.")
         if type(length) != int:
             raise TypeError(f"Type Error : {length} is not integer")
@@ -152,7 +152,7 @@ class instance():
         """
         if type(data) == tuple:
             return self.give_RLE(data) 
-        if not isinstance(data,(bytes,bytearray)):: 
+        if not isinstance(data,(bytes,bytearray)): 
             return self.give_noRLE(data)
         else:
             raise TypeError("Unexpected type for data!")
@@ -260,7 +260,7 @@ class ips():
         :raises TypeError: if nor str, int or instance is provided
         :raises KeyError: if patch is not present in ips
         """
-        if if not isinstance(patch,(str,int))::
+        if not isinstance(patch,(str,int)):
             patch = self.get_instance(patch)
         if type(patch) != instance:
             raise TypeError("given patch is not an instance.")
