@@ -209,49 +209,50 @@ class ips():
         if True in [match.offset == new.offset for match in self.instances] and not override:
             raise OffsetError("Offset is occupied")
 
-        lowercheck = self.in_range(0,new.offset)    #find lower neighbor
-        if len(lowercheck) > 0:
-            lowercheck = lowercheck[-1]
+        lowercheck = tuple(self.in_range(0,new.offset))         #get tuple of instances until offsets
+        if len(lowercheck) > 0:                                 #if there is a preceeding instance
+            lowercheck = lowercheck[-1]                         #retrieve the last
         else:
-            lowercheck = instance(0,(b"\x00",0),"Lower Check")
-
+            lowercheck = instance(0,(b"\x00",0),"Lower Check")  #otherwise create object with empty data for comparison
+        
         if lowercheck.offset + lowercheck.size > new.offset:    #if last patch is in range of new patch
-            if override and lowercheck.name != "Lower Check":
-                if sustain:
-                    temp = instance(lowercheck.offset,lowercheck.data,lowercheck.name) 
+            if override and lowercheck.name != "Lower Check":   #check that this is not the bogus data (this can be ignored)
+                if sustain:                                     #if attempting to maintain as much of the mod as possible
+                    temp = instance(lowercheck.offset,lowercheck.data,lowercheck.name)  #Create temporary object to replace the instance at lowercheck offset
                     if temp.rle:
-                        temp.give_RLE(temp.data[0],(lowercheck.offset + lowercheck.size)-new.offset)
+                        temp.give_RLE(temp.data[0],(lowercheck.offset + lowercheck.size)-new.offset)    #Write up to offest
                     else:
-                        temp.give_noRLE(temp.data*((lowercheck.offset + lowercheck.size)-new.offset))
-                    self.remove(lowercheck)
-                    self.insert(temp)   #insert new trimmed patch at current pos, raise warning if need be
+                        temp.give_noRLE(temp.data[:(lowercheck.offset + lowercheck.size)-new.offset])   #Write up to offset
+                    self.remove(lowercheck)                                                             #remove lowercheck (it is invalid), insert new safe data
+                    self.insert(temp)   #insert new trimmed patch at current offset, raise warning if need be
                 else:
-                    self.remove(lowercheck)                 #remove patch if no sustain and taking place with override enabled
+                    self.remove(lowercheck)                     #remove patch if no sustain and taking place with override enabled
             else:
                 raise OffsetError(f"{lowercheck.name} writes to areas in {new.name}") 
-        uppercheck = self.in_range(new.offset,new.offset+new.size)  #read from new.offset to end
+        uppercheck = tuple(self.in_range(new.offset,new.offset+new.size)) #read from new.offset to end
         if len(uppercheck) == 0:
-            uppercheck = (instance(0xFFFFFF,(b"\x00",0),"Upper Check"))   #Zero data at final offset
-        if new.offset + new.size > uppercheck[0].offset:
-            if override and uppercheck[0].name != "Upper check":
-                for instance in uppercheck[:-1]:
-                    self.remove(instance)
-                if sustain:
-                    temp = instance(new.offset+new.size,uppercheck[0].data,uppercheck[0].name) 
+            uppercheck = (instance(0xFFFFFF,(b"\x00",0),"Upper Check"),)  #Zero data at final offset
+        if new.offset + new.size > uppercheck[0].offset:                  #if new instance writes into the first consecutive offset
+            if override and uppercheck[0].name != "Upper Check":          #then if overwriting and we are not overwriting "Upper Check"
+                for old in uppercheck[:-1]:                               #For every instance until the last
+                    self.remove(old)                                      #remove
+                if sustain:                                               #if attempting to maintain as much of the mod as possible
+                    temp = instance(new.offset+new.size,uppercheck[0].data,uppercheck[0].name) #Create temporary object to replace the instance outside uppercheck[0] offset
                     if temp.rle: 
-                        temp.give_RLE(temp.data[0],(new.offset+new.size)-uppercheck[0].offset) 
+                        temp.give_RLE(temp.data[0],(new.offset+new.size)-uppercheck[0].offset) #Write up to new offset
                     else:
-                        temp.give_noRLE(temp.data*((new.offset+new.size)-uppercheck[0].offset)) 
-                    self.remove(uppercheck[0]) 
-                    self.insert(temp) 
+                        temp.give_noRLE(temp.data[(new.offset+new.size)-uppercheck[0].offset:])#Write up to new offset
+                    self.remove(uppercheck[0])                            #remove uppercheck (it is invalid), insert new safe data
+                    self.insert(temp)                                     #insert new trimmed patch at current offset, raise warning if need be
                 else:
-                    self.remove(uppercheck)
+                    self.remove(uppercheck[0])                            #simply overwrite this instance.
             else:
                 raise OffsetError(f"{uppercheck.name} writes to areas in {new.name}") 
-        self.instances.insert(self.instances.index(uppercheck) if uppercheck.name != "Upper check" else -1,new)
+        self.instances.insert(self.instances.index(uppercheck[0]) if uppercheck.name[0] != "Upper check" else -1,new)
+        #Now, I got confused looking at this. But this is the built-in insert used for list manipulation, so the code does not infinitely loop.
 
 
-
+        
     def remove(self, patch : instance | str | int):
         """
         Used to remove an instance from an ips class
@@ -280,7 +281,7 @@ class ips():
         self.insert(instance(offset,hold.data,hold.name),override)
         
 
-def build(base : bytes | bytearray, prepatch : bytes,legal : bool = True) -> bytearray:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = True) -> bytearray:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
@@ -305,7 +306,7 @@ def build(base : bytes | bytearray, prepatch : bytes,legal : bool = True) -> byt
             raise ScopeError("Modified file has data beyond target!")   #solution would be to split and append data
         elif len(prepatch) < len(base):
             raise ScopeError("Modified file is smaller than Original!") #solution would be to trim original to size of modded.
-        if 1:            
+        else:
             count = 0;build=b""        
             while count != len(prepatch):
                 if count == len(prepatch)-1:
@@ -354,8 +355,15 @@ def apply(patch : ips, base : bytes | bytearray) -> bytearray:
                 raise TypeError("IPS given is not of type ips!")
             if not isinstance(base,(bytes,bytearray)):
                 raise TypeError("base given is not of type bytes or bytearray!")
+
             build = b""
             for instance in patch.instances:      
+                #if len(base) > instance.offset                         #If still overwriting
+                #   build+= base[len(build):instance.offset]            #store original data up to this current point
+                #else:                                                  #otherwise we are appending new bytes
+                #   build+= b"\x00" * (instance.offset - len(build))    #and therefore will append zerodata until the first offset
+                #if instance.rle:                                       #if instance is of type rle
+                #   build+= instance.data[0]*instance.data[1]           #append bytes of hunk byte with hunk length | byte : length
                 build+= (base[len(build):instance.offset] if len(base) > instance.offset else b"\x00" * (instance.offset - len(build)))+(instance.data[0]*instance.data[1] if instance.rle else instance.data)
             return build+ base[len(build):]
         except:
