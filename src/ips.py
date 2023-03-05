@@ -194,14 +194,15 @@ class ips():
         :raises TypeError: if end is not integral
         """
         return (instance for instance in self.instances if instance.offset > start and (instance.offset < end if type(end) == int else True))
+    """
     def insert(self, new : instance, override : bool = False, sustain : bool = True):
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
-        """
+        
         Insert an instance into an ips object.
         :param instance new: instance needed to be implemented
         :param bool override: Override flag, should clashing data be removed. Disabled by default
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
-        """
+        
         if type(new) != instance:
             raise TypeError(f"Given instance is not of type `instance`")
         
@@ -247,11 +248,11 @@ class ips():
                     self.remove(uppercheck[0])                            #simply overwrite this instance.
             else:
                 raise OffsetError(f"{uppercheck.name} writes to areas in {new.name}") 
-        self.instances.insert(self.instances.index(uppercheck[0]) if uppercheck.name[0] != "Upper check" else -1,new)
+        self.instances.insert(self.instances.index(uppercheck[0]) if uppercheck[0].name != "Upper check" else -1,new)
         #Now, I got confused looking at this. But this is the built-in insert used for list manipulation, so the code does not infinitely loop.
 
 
-        
+    """   
     def remove(self, instances : instance | str | int):
         """
         Used to remove an instance from an ips class
@@ -267,7 +268,7 @@ class ips():
         else:
             raise TypeError("given patch is not an instance.")
 
-
+    """
     def move(self, Instance : instance, offset : int,override : bool = False, sustain : bool = True):
         if isinstance(Instance,(str,int)):
             Instance = self.get_instance(Instance)[0]
@@ -280,6 +281,7 @@ class ips():
         hold = Instance 
         self.instances.remove(Instance)  
         self.insert(instance(offset,hold.data,hold.name),override, sustain)
+    """
         
 
 def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = True) -> bytearray:
