@@ -120,7 +120,7 @@ class instance():
         if length == 0:
             print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
         self.rle = True 
-        self.data = tuple(byte,length)
+        self.data = (byte,length)
         return self.data
     def give_noRLE(self,data : bytes | bytearray) -> bytearray:
         """
@@ -182,8 +182,7 @@ class ips():
         :return: generator to provide all potentially desired instances
         :rtype: object
         """
-        match = [match for match in self.instances if (match.name == specifier if type(specifier) == str else match.offset == specifier)] 
-        return match if len(match) > 0 else None
+        return (match for match in self.instances if (match.name == specifier if type(specifier) == str else match.offset == specifier))
     def in_range(self,start : int = 0, end : int = None) -> object:
         """
         returns generator providing instances within a range in offset
@@ -253,7 +252,7 @@ class ips():
 
 
         
-    def remove(self, patch : instance | str | int):
+    def remove(self, instances : instance | str | int):
         """
         Used to remove an instance from an ips class
         :param patch:
@@ -261,15 +260,17 @@ class ips():
         :raises TypeError: if nor str, int or instance is provided
         :raises KeyError: if patch is not present in ips
         """
-        if not isinstance(patch,(str,int)):
-            patch = self.get_instance(patch)
-        if type(patch) != instance:
-            raise TypeError("given patch is not an instance.")
+        if isinstance(instances,(str,int)):
+            for ins in tuple(self.get_instances(instances)): self.remove(ins)
+        elif isinstance(instances,instance):
+            self.instances.remove(instances)
         else:
-            self.instances.remove(patch)    #Python will raise error by missing value
-    def move(self, Instance : instance, offset : int,override):
+            raise TypeError("given patch is not an instance.")
+
+
+    def move(self, Instance : instance, offset : int,override : bool = False, sustain : bool = True):
         if isinstance(Instance,(str,int)):
-            patch = self.get_instance(patch)
+            Instance = self.get_instance(Instance)[0]
         if not isinstance(Instance,instance):
             raise Exception(f"Type Error : {Instance} is not an instance.")
         if Instance not in self.instances:
@@ -278,7 +279,7 @@ class ips():
             raise Exception(f"Number Error : {offset} is either over 16777215 or smaller than zero which is impossible!")
         hold = Instance 
         self.instances.remove(Instance)  
-        self.insert(instance(offset,hold.data,hold.name),override)
+        self.insert(instance(offset,hold.data,hold.name),override, sustain)
         
 
 def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = True) -> bytearray:
