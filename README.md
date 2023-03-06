@@ -1,9 +1,19 @@
+
 > 
 
 # IPSLuna
-IPSLuna is not *just* your common `patch in` `patched out` module.
+`ipsluna` is not your *just* your *typical* `ips` in, `modified` out Python module. It offers total control over the skeleton of the `ips` file in ways unseen by any other `ips` tool to date.
 ```python
 from ipsluna import *
+#it may be recommended for bigger projects to use...
+import ipsluna as ips
+#or simply, if you do not need to use all the tools
+
+#for only building
+from ispluna import ips,instance,i2b,build
+
+#for only applying
+from ipsluna import ips,instance,b2i,apply
 ```
 Then access the IPS patch with:
 ```python
@@ -16,18 +26,18 @@ patch = normalize(patch)
 for instance in patch.items():
 	print(instance)
 >>> (0xABCD,0xFE)	  #For nonRLE instances
->>> (0xABCDE:(0xEF,4))#For RLE instances
+>>> (0xABCDE,(0xEF,4))#For RLE instances
 ```
-RLE, or Run Length Encoding, instances store the run length at position `1` in the `tuple` and the `byte` specified at position `0`.
+RLE instances store the run length at position `1` in the `tuple` and the `byte` at position `0`.
 This data *should* be chronologically ordered as all working IPS file should be, a quick check with:
 ```python
 def checkNormalized(keys : dict_keys):
 	keys = (list(keys),len(dict_keys)-1)
 	for key in range(keys(1)):
-			if keys[key] > keys[key+1]
-			return False
+		if keys[key] > keys[key+1]
+		return False
 	else:
-			return True
+		return True
 ```
 Once we can assume a normalized IPS dictionary we create a custom class for said IPS file with:
 ```python
@@ -88,21 +98,10 @@ graphic = tuple(patch.in_range(16400))
 graphic = patch.in_range():
 #this returns generator object too, working similarly to get_instances
 ```
-You can also insert a new `instance` into a pre-loaded `ips`:
+Patches may also be removed:
 ```python
-custom= instance(16416,(b"\x00",8)","clear tile 2")
-patch.insert(custom)
-#position is based of offset, and is inserted chronologically in ips
->>> Offset Error : clear tile 2 clashed with Unnamed patch at 16416
-#In which case we can override!
-patch.insert(custom,True) 
-```
-Patches may also be moved and removed:
-```python
-patch.move("example patch",01234)
-#This is actually just fetching the instance, storing it, deleting it, modifying it's offset and re-inserting it!
 patch.remove("example patch")
-#This simply removes the patch from memory.
+#This simply removes all matching instannces from the patch in memory.
 ```
 Finally, onto the bits that most most people care about we have building and applying.
 
@@ -131,50 +130,6 @@ You may also receive `ScopeError` when attempting to store data beyond the size 
 
 `OffsetError` will occur when any insertion in an ips class clashes with a pre-existing `offset`, if `override` is enabled the ips will be modified to suit the new `instance` unless `sustain` is unset, in any `instance` within range of the new `instance` will be removed.
 
-## Workarounds
-While the `ips` limit is `16,842,750`, `ips` can still target files above this if done correctly.
-
-```python
-from ips import *
-def superbuild(base : bytes | bytearray, modified : bytes | bytearray, legal : bool = True): 
-	splits = [];give=()
-	for split in [0x100FFFE*split for split in range(base%0x100FFFE)]:
-		give.append(build(base[split:split+0x100FFFE],modified[split:split+0x100FFFE]))
-	for left in [0x100FFFE*split for split in range(len(splits),modified%0x100FFFE]:
-		give.append(build(b"",modified[split:split+0x100FFFE]))
-	return give
-```
-This solution here simply splits up the existing files into a `tuple` of `bytearrays` which would be processed against the base file like:
-```python
-def superapply(superips,original):
-	for ips in superips:
-		superips[ips]=ips(normalize(ips))
-	build = b""
-	for ips in [ips(normalize(superips[ips])),0x100FFFE * ips in range(len(superips))]:
-		 build+= apply(ips[0],base[ips[1]:ips[1]+0x100FFFE if len(original) <= ips[1] else b"")
-	return build
-```
-This idea of a "super" ips however is not required as successors suited to larger filetypes now exist such as bps or Xdelta.
-
-```python
-def microapply(base : bytes | bytearray, modified bytes | bytearray, legal : bool = True):
-	return build(base[:len(modified)],modified,legal)
-```
-Simple to making a modified file smaller than the original, the reason that this fix is not native to the module is because a file may serve to modify somewhere within the file and not the entire file and beyond.
-
-In order to trim writes to an offset in the `ips` class itself however, simply:
-```python
-for remove in ips.in_range(start="Start"):
-	ips.remove(remove)
-#Apply patches to base traditionally
-```
-These types of things are so circumstantial that it makes no sense to include it in the module natively.
-
-The only ways to negate an `OffsetError` is to use the optional parameters in `insert` or `move` (which uses `insert`). By default `override` is set to `False` to ensure that no valuable data is modified without explicit direction.
-
-By enabling `override`, you should ***not*** get an `OffsetError` unless the `ips` has been modified by an external instruction. 
-This, however, is unrealistic to expect.
- `sustain` will modify any neighbouring `instance` ensuring that as much of the `ips` is sustained during an override. This can be disabled however (And at times it may make sense too).
 ## Traditional Usage
 Many may not use the advanced features of `ipsluna` so I shall demonstrate some common usages of this module.
 ```python
@@ -227,13 +182,23 @@ Each `instance` is given a name like
 ```
 And therefore should not match any other instance, unless the name has been specified by inserting a new `instance` or the `give_name` method. In which case an `iterable` with a length higher than one *may occur*, for this you should always do something on the lines of this: 
 ```python
-example = tuple(patch.get_instance("example"))[0]
+example = tuple(patch.get_instances("example"))[0]
 #or...
-example = tuple(patch.get_instance("example"))[-1]
+example = tuple(patch.get_instances("example"))[-1]
 ```
 Of course depending on what class you decided to make the `generator` into you may also do this:
 ```python
-example = patch.get_instance("example")
+example = patch.get_instances("example")
 example = tuple(patch.offset for patch in example if patch.offset%0)
 ```
 To return all patches at that name if the offset addresses an even byte.
+
+*This project is still in beta and the following features remain unimplemented:*
+```
+instance insertion
+instance moving
+native integrity checks
+illegal ips construction
+```
+These features were  postponed due to their complex and rare nature and will be implemented in subsequent releases of `ipsluna`.
+
