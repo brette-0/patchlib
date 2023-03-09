@@ -1,19 +1,16 @@
-
-> 
-
 # IPSLuna
 `ipsluna` is not your *just* your *typical* `ips` in, `modified` out Python module. It offers total control over the skeleton of the `ips` file in ways unseen by any other `ips` tool to date.
 ```python
-from ipsluna import *
+from ipsluna.ips import *
 #it may be recommended for bigger projects to use...
-import ipsluna as ips
+import ipsluna.ips as ips
 #or simply, if you do not need to use all the tools
 
 #for only building
-from ispluna import ips,instance,i2b,build
+from ispluna.ips import ips,instance,i2b,build
 
 #for only applying
-from ipsluna import ips,instance,b2i,apply
+from ipsluna.ips import ips,instance,b2i,apply
 ```
 Then access the IPS patch with:
 ```python
