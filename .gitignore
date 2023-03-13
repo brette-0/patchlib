@@ -1,2 +1,5 @@
 dist/
 src/ipsluna.egg-info
+tests/
+setup.cfg/
+pyproject.toml/

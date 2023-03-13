@@ -132,7 +132,7 @@ class instance():
         :raises TypeError: if data is not of type `bytes` or `bytearray`
         :raises ScopeError: if length of data is over 0xFFFF or less than zero.
         """
-        if not isinstance(base,(bytes,bytearray)):
+        if not isinstance(data,(bytes,bytearray)):
             raise TypeError(f"Given data is not bytes or bytearray type!")
         if len(data) > 0xFFFF or len(data) < 0:
             raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
@@ -194,66 +194,76 @@ class ips():
         :raises TypeError: if end is not integral
         """
         return (instance for instance in self.instances if instance.offset > start and (instance.offset < end if type(end) == int else True))
-    """
+    
     def insert(self, new : instance, override : bool = False, sustain : bool = True):
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
-        
+        """
         Insert an instance into an ips object.
         :param instance new: instance needed to be implemented
         :param bool override: Override flag, should clashing data be removed. Disabled by default
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
-        
+        """
         if type(new) != instance:
             raise TypeError(f"Given instance is not of type `instance`")
         
         if True in [match.offset == new.offset for match in self.instances] and not override:
             raise OffsetError("Offset is occupied")
-
+        
         lowercheck = tuple(self.in_range(0,new.offset))         #get tuple of instances until offsets
         if len(lowercheck) > 0:                                 #if there is a preceeding instance
             lowercheck = lowercheck[-1]                         #retrieve the last
         else:
-            lowercheck = instance(0,(b"\x00",0),"Lower Check")  #otherwise create object with empty data for comparison
+            lowercheck = instance(0,(b"\x00",0),"internal_ips_lowercheck")  #otherwise create object with empty data for comparison
+
+        
         
         if lowercheck.offset + lowercheck.size > new.offset:    #if last patch is in range of new patch
-            if override and lowercheck.name != "Lower Check":   #check that this is not the bogus data (this can be ignored)
+            if override and lowercheck.name != "internal_ips_lowercheck":   #check that this is not the bogus data (this can be ignored)
                 if sustain:                                     #if attempting to maintain as much of the mod as possible
                     temp = instance(lowercheck.offset,lowercheck.data,lowercheck.name)  #Create temporary object to replace the instance at lowercheck offset
                     if temp.rle:
-                        temp.give_RLE(temp.data[0],(lowercheck.offset + lowercheck.size)-new.offset)    #Write up to offest
+                        temp.give_RLE(temp.data[0],new.offset-lowercheck.offset)    #Write up to offest
                     else:
-                        temp.give_noRLE(temp.data[:(lowercheck.offset + lowercheck.size)-new.offset])   #Write up to offset
-                    self.remove(lowercheck)                                                             #remove lowercheck (it is invalid), insert new safe data
-                    self.insert(temp)   #insert new trimmed patch at current offset, raise warning if need be
+                        temp.give_noRLE(temp.data[:new.offset-lowercheck.offset])   #Write up to offset
+                    self.instances.insert(self.instances.index(lowercheck),temp)
+                    self.remove(lowercheck)
                 else:
                     self.remove(lowercheck)                     #remove patch if no sustain and taking place with override enabled
             else:
                 raise OffsetError(f"{lowercheck.name} writes to areas in {new.name}") 
+
+
         uppercheck = tuple(self.in_range(new.offset,new.offset+new.size)) #read from new.offset to end
+
+
         if len(uppercheck) == 0:
-            uppercheck = (instance(0xFFFFFF,(b"\x00",0),"Upper Check"),)  #Zero data at final offset
+            uppercheck = (instance(0xFFFFFF,(b"\x00",0),"internal_ips_uppercheck"),)  #Zero data at final offset
         if new.offset + new.size > uppercheck[0].offset:                  #if new instance writes into the first consecutive offset
-            if override and uppercheck[0].name != "Upper Check":          #then if overwriting and we are not overwriting "Upper Check"
+            if override and uppercheck[0].name != "internal_ips_uppercheck":          #then if overwriting and we are not overwriting "Upper Check"
                 for old in uppercheck[:-1]:                               #For every instance until the last
                     self.remove(old)                                      #remove
+                uppercheck = uppercheck[-1]
                 if sustain:                                               #if attempting to maintain as much of the mod as possible
-                    temp = instance(new.offset+new.size,uppercheck[0].data,uppercheck[0].name) #Create temporary object to replace the instance outside uppercheck[0] offset
+                    temp = instance(new.offset+new.size,uppercheck.data,uppercheck.name) #Create temporary object to replace the instance outside uppercheck[0] offset
                     if temp.rle: 
-                        temp.give_RLE(temp.data[0],(new.offset+new.size)-uppercheck[0].offset) #Write up to new offset
+                        temp.give_RLE(temp.data[0],temp.offset-uppercheck.offset) #Write up to new offset
                     else:
-                        temp.give_noRLE(temp.data[(new.offset+new.size)-uppercheck[0].offset:])#Write up to new offset
-                    self.remove(uppercheck[0])                            #remove uppercheck (it is invalid), insert new safe data
-                    self.insert(temp)                                     #insert new trimmed patch at current offset, raise warning if need be
+                        temp.give_noRLE(temp.data[:-(temp.offset-uppercheck.offset)])#Write up to new offset
+                    self.instances.insert(self.instances.index(uppercheck),temp)
+                    self.remove(uppercheck)                            #remove uppercheck (it is invalid), insert new safe data
+                    #self.insert(temp)                                     #insert new trimmed patch at current offset, raise warning if need be
                 else:
-                    self.remove(uppercheck[0])                            #simply overwrite this instance.
+                    self.remove(uppercheck)                            #simply overwrite this instance.
             else:
                 raise OffsetError(f"{uppercheck.name} writes to areas in {new.name}") 
-        self.instances.insert(self.instances.index(uppercheck[0]) if uppercheck[0].name != "Upper check" else -1,new)
+        else:
+            uppercheck = uppercheck[-1]
+        self.instances.insert(self.instances.index(uppercheck) if uppercheck.name != "internal_ips_uppercheck" else -1,new)
         #Now, I got confused looking at this. But this is the built-in insert used for list manipulation, so the code does not infinitely loop.
 
 
-    """   
-    def remove(self, instances : instance | str | int):
+       
+    def remove(self, instances : instance | str | int) -> instance | tuple:
         """
         Used to remove an instance from an ips class
         :param patch:
@@ -263,10 +273,9 @@ class ips():
         """
         if isinstance(instances,(str,int)):
             for ins in tuple(self.get_instances(instances)): self.remove(ins)
-        elif isinstance(instances,instance):
-            self.instances.remove(instances)
-        else:
-            raise TypeError("given patch is not an instance.")
+        elif isinstance(instances,instance): self.instances.remove(instances)
+        else: raise TypeError("given patch is not an instance.")
+        return instances
 
     """
     def move(self, Instance : instance, offset : int,override : bool = False, sustain : bool = True):
@@ -284,7 +293,7 @@ class ips():
     """
         
 
-def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = True) -> bytearray:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int | str = 24) -> bytearray:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
@@ -299,13 +308,22 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
         :raises ScopeError: if modified file is unsuitabel for IPS generation
         :raises FileError: if IPS file bytes or bytearray contains illegal data.
         """
-        if not isinstance(prepatch,(bytes,bytearray)):
-            raise TypeError("Modified file must be bytes or bytearray") #no solution
-        if not isinstance(base,(bytes,bytearray)):
-            raise TypeError("Original file must be bytes or bytearray") #no solution
-        if not isinstance(legal,bool):
-            raise TypeError("`Legal` file must be Type `bool`")         #no solution
-        if len(prepatch) > 16842750:
+
+        #legal may be None, in which it will prioritize legality but will contain illegal data should it be needed to generate the file
+        #bitsize will be used to dictate if the build is possible (if the file writes beyond said bitsize then whatever it is inteded for is halted)
+
+        if not isinstance(prepatch,(bytes,bytearray)): raise TypeError("Modified file must be bytes or bytearray") #no solution
+        if not isinstance(base,(bytes,bytearray)): raise TypeError("Original file must be bytes or bytearray") #no solution
+        if not (isinstance(legal,bool) or legal == None): raise TypeError("`Legal` parameter must be Type `bool`")         #no solution
+        if isinstance(bitsize,str):
+            if True in [l for l in bitsize if l not in list(range(10))]: raise TypeError("`bitsize` parameter must only contain positive integral values")
+            bitsize = int(bitsize)
+        elif not isinstance(bitsize,int): raise TypeError("`bitsize` parameter must be Type `int` or `str`")         #no solution
+
+        fileupperlimit= 16842750 if bitsize >= 32 else (2**bitsize)-1
+
+
+        if len(prepatch) > fileupperlimit:
             raise ScopeError("Modified file has data beyond target!")   #solution would be to split and append data
         elif len(prepatch) < len(base):
             raise ScopeError("Modified file is smaller than Original!") #solution would be to trim original to size of modded.
