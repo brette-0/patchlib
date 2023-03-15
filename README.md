@@ -2,15 +2,9 @@
 `ipsluna` is not your *just* your *typical* `ips` in, `modified` out Python module. It offers total control over the skeleton of the `ips` file in ways unseen by any other `ips` tool to date.
 ```python
 from ipsluna.ips import *
+
 #it may be recommended for bigger projects to use...
 import ipsluna.ips as ips
-#or simply, if you do not need to use all the tools
-
-#for only building
-from ispluna.ips import ips,instance,i2b,build
-
-#for only applying
-from ipsluna.ips import ips,instance,b2i,apply
 ```
 Then access the IPS patch with:
 ```python
@@ -39,13 +33,21 @@ def checkNormalized(keys : dict_keys):
 Once we can assume a normalized IPS dictionary we create a custom class for said IPS file with:
 ```python
 patch = ips(patch)	#create instance of patch class using normalized dictionary
+
+"""
+IPS was not made to patch files greater than
+0xFFFFFF in size, and therefore the bitsize by
+default is set to 24 as to preserve compatibility.
+The optional bitsize parameter could be modified
+from anything between 1 and 32.
+"""
 ```
 From this we can understand the patch in more detail:
 ```python
 print(len(patch.instances))	#This will show us how many patch instances there are
->>> 321		#This tells there are 321 patch instances in this file
-print(patch.instances[-1].offest + patch.instances[-1].size)
->>> 40016	#This tells us the last byte the patch wrote to
+>>> 321						#This tells there are 321 patch instances in this file
+print(patch.instances[-1].end)
+>>> 40016					#This tells us the last byte the patch wrote to
 ```
 Other than just metadata commands, the `instance` object stores some interesting data itself.
 ```python
@@ -56,10 +58,15 @@ print(example.rle)			#Is this an rle byte?
 >>> True 					#Yes it is!
 print(example.data)			#what is the data?
 >>> (b"\x42",4)				#It is 0x42 four times!
+print(example.size)			#how long is the data
+>>> 4						#is same as data[1] for RLE
+print(example.end)			#where does it write up to?
+>>> 16404					#Up to 16404
+
 example.give((b"\x32",9))	#This replaces the example instance contents with the Nine length 0x32 RLE Bytes
 example.give(b"\x23\x54\x25")#This may also take noRLE
 
-#Example also has give_RLE and give_noRLE was faster writes
+#instnace class also has give_RLE and give_noRLE methods for faster code
 
 example.noRLE()						#removes the RLE in order to speed up patching process (not data efficient)
 example.give_name("example patch")	#This gives a patch a name, allowing for easier legitbility when being viewed later.
@@ -76,30 +83,46 @@ Example of `RLE` `instance`:
 
 The `ips` class stores all of these `instances` in the array, since `class` objects are awkward to navigate manually, there is a variety of commands within the `ips` class allowing for competent `instance` handling.
 ```python
-example = tuple(patch.get_instances("example patch"))[0]
-#This allows us to retrieve an instance by name
-example = tuple(patch.get_instances(16400))[0]
-#It also works by offset!
+example = patch.get_instances("example patch")
+#This allows us to retrieve all instances by name
+example = patch.get_instance(16400)
+#It also works by offset, but for singular!
 
-#returns generator, so once generated data, isolate the instance in the iterable
-
-graphic = tuple(patch.in_range(16400,40016))
+graphic = patch.in_range(16400,40016)
 #this retrieves all instances within that offset range!
 
-graphic = tuple(patch.in_range(end=40016))
+graphic = patch.in_range(end=40016)
 #this retrieves from 0 to 40016
 
-graphic = tuple(patch.in_range(16400))
-#this retrieves from 16400 to the end!
+graphic = patch.in_range(16400)
+#this retrieves from 16400 to the upperlimit of the ips bitsize!
 
 graphic = patch.in_range():
-#this returns generator object too, working similarly to get_instances
+#functions the same as get_instances but slower
 ```
 Patches may also be removed:
 ```python
 patch.remove("example patch")
 #This simply removes all matching instannces from the patch in memory.
 ```
+This allows us to safely `insert` new `instances`:
+```python
+new = instance(16420, b"ABC", "new instnace")
+patch.insert(new)
+#This will raise OffsetError if an instance is writing where this new patch will
+patch.insert(new, override=True)
+#unless you specify complete override
+```
+Thanks to this we can also `move` an `instance`:
+```python
+retrieve = mod.in_range(0x80016)[0] #access first result from 0x80016
+mod.move(retrieve, 0x80144)			#move 128 bytes ahead
+
+#This uses insertion so an override flag may need to be set to avoid OffsetError
+mod.move(retrieve, 0x80144, override = True)
+#This would fix that
+```
+
 Finally, onto the bits that most most people care about we have building and applying.
 
 `apply` takes two parameters `patch` and `base`:
@@ -113,24 +136,19 @@ The `build` function takes two parameters, and an optional `legal`, which when s
 with open("patch.ips","wb") as f:
 	f.write(build(original,modded))
 ```
-`legal` does not indicate anything regarding the law, rather it serves to avoid storing original data within the patch file.
-This is very important when handling sensitive data that is not in the Public Domain.
-
-When `legal` is not set, the patch's integrity is at risk however there is the chance for a smaller and more efficient file, however should only be unset when handling Public Domain data.
-
 ## Errors:
 Often a `TypeError` will be raised when invalid datatypes are passed passed into any `function` or `method` in the module.
 
 You may receive `ScopeError` when attempting to create an instance  with an offset beyond `0xFFFFFF` or below zero.
 
-You may also receive `ScopeError` when attempting to store data beyond the size of `0xFFFF` or with a run length longer than `0xFF`.
+You may also receive `ScopeError` when attempting to store data beyond the size of `0xFFFF` or with a run length longer than `0xFF` or trying to write data beyond the legal offset decided by initialization (typically  `0xFFFFFF`).
 
-`OffsetError` will occur when any insertion in an ips class clashes with a pre-existing `offset`, if `override` is enabled the ips will be modified to suit the new `instance` unless `sustain` is unset, in any `instance` within range of the new `instance` will be removed.
+`OffsetError` will raise if the execution of a method would construct bad data, this is due to the the action creating data that would overlap pre-existing instances. 
 
 ## Traditional Usage
 Many may not use the advanced features of `ipsluna` so I shall demonstrate some common usages of this module.
 ```python
-from ipsluna import *
+from ipsluna.ips import *
 def build(basepath,moddedpath):
 	with open(basepath,"rb") as f:
 		base = f.read()
@@ -171,31 +189,36 @@ temp = []	#store removed instances
 temp.append(patch.remove(instance))
 #removes files and transfers to `temp`
 ```
-Searching for `instance` in `ips` by `offest` **should** always respond with a `generator` providing an `iterable` with a length no longer than **one**, else your `ips` is broken and may respond badly.
+Searching for `instance` in `ips` by `offest` **should** always respond with a `tuple`  with a length no longer than **one**, else your `ips` is broken and may respond badly.
 
-Each `instance` is given a name like 
+Each `instance` is given a default name like 
 ```python
 "Unnamed instance at : 12400"
 ```
 And therefore should not match any other instance, unless the name has been specified by inserting a new `instance` or the `give_name` method. In which case an `iterable` with a length higher than one *may occur*, for this you should always do something on the lines of this: 
 ```python
-example = tuple(patch.get_instances("example"))[0]
+example = patch.get_instances("example")[0]
 #or...
-example = tuple(patch.get_instances("example"))[-1]
+example = patch.get_instances("example")[-1]
 ```
 Of course depending on what class you decided to make the `generator` into you may also do this:
 ```python
 example = patch.get_instances("example")
-example = tuple(patch.offset for patch in example if patch.offset%0)
+example = [patch.offset for patch in example if patch.offset%0]
 ```
 To return all patches at that name if the offset addresses an even byte.
 
 *This project is still in beta and the following features remain unimplemented:*
 ```
-instance insertion
-instance moving
-native integrity checks
-illegal ips construction
+sustain:
+	preserves recoverable data from consecutive
+	instances during insertion
+	
+native integrity checks:
+	functions may be added to monitor legitimacy
+	
+illegal ips construction:
+	functions may be added to allow illegitimacy 
 ```
 These features were  postponed due to their complex and rare nature and will be implemented in subsequent releases of `ipsluna`.
 
