@@ -1,10 +1,3 @@
-def b2i(bytelist) -> int:  #Accept bytearray
-  build = ""
-  for i in range(0, len(bytelist)):  #For each byte
-    build += ("0" * (2 - len(hex(bytelist[i])[2:]))) + hex(bytelist[i])[2:]
-  return int(build, base=16)
-
-
 def i2b(number : int,bytesize : int) -> bytearray: #convert integral number to xbytes
     build = []
     for depth in range(bytesize-1,-1,-1):
@@ -41,11 +34,11 @@ def normalize(patch : bytes | bytearray) -> dict:
       while count != len(patch):
         count += 8
         if patch[count - 5] > 0 or patch[count - 4] > 0:
-            size = b2i(patch[count - 5:count - 3])
-            changes[b2i(patch[count-8:count - 5])] = patch[count - 3:count + size - 3]
+            size = int(patch[count - 5:count - 3].hex(),16)
+            changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
             count += size - 3
         else:  #Handle RLE, only if NON-RLE is not met     
-            changes[b2i(patch[count-8:count - 5])] = (bytes([patch[count - 1]]),b2i(patch[count - 3:count - 1]))       
+            changes[int(patch[count-8:count - 5].hex(),16)] = (bytes([patch[count - 1]]),int(patch[count - 3:count - 1].hex(),16))       
       return changes
 
 
@@ -69,15 +62,15 @@ class instance():
             raise TypeError("Instance data is invalid!")
         if len(data) != 2 if isinstance(data,tuple) else False:
             raise FileError("Tuple has invalid data!")
-        if type(offset) != int:
+        if not isinstance(offset, int):
             raise TypeError("Offset is not integral!")
         if offset > 0xFFFFFF:
             raise ScopeError("Offset exceeds limitations of IPS")
         if offset < 0:
             raise ScopeError("Offset is below zero and therefore impossible!")
-        if type(name) != str and name is not None:
+        if not isinstance(name, str) and name is not None:
             raise TypeError("Given name is not of type string and is therefore unsuitable")
-        self.rle,self.offset,self.data = type(data) == tuple,offset,data 
+        self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
         self.size = data[1] if self.rle else len(data)
         self.end = self.offset + self.size
         self.name = name if name is not None else f"Unnamed patch at {offset}"
@@ -87,9 +80,9 @@ class instance():
         :type str name: The name to give to the instance
         :raises TypeError: if name is not string
         """
-        if type(name) != str:
+        if not isinstance(name, str):
             raise TypeError("Given name is not of type String!")
-        self.name = name if type(name) == str else self.name
+        self.name = name
     def noRLE(self):
         """
         Converts instance of RLE to noRLE
@@ -98,6 +91,13 @@ class instance():
             self.rle = False
             self.data = tuple(self.data[0]*self.data[1])
         self.end = self.offset + self.size
+
+    
+    
+
+ 
+
+        
     def give_RLE(self,byte : bytes | bytearray,length : int) -> tuple:
         """
         Gives immediate RLE instance to specified instance.
@@ -113,16 +113,16 @@ class instance():
         """
         if not isinstance(byte,(bytes,bytearray)):
             raise TypeError(f"Type Error : {byte} is not bytes or bytearray object.")
-        if type(length) != int:
+        if not isinstance(length, int):
             raise TypeError(f"Type Error : {length} is not integer")
         if length > 256 or length < 0:
             raise ScopeError(f"RLE Error : {length} is either above 255 and therefore too large, or smaller than zero and therefore impossible!")
         if len(byte) != 1:
             raise ScopeError(f"RLE ERROR : {byte} is either too long or zero length, please ensure that this is a singular byte!")
-        if length == 0:
+        if not length:
             print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
         self.rle = True 
-        self.data = (byte,length)
+        self.data = byte, length
         self.end = self.offset + self.size
         return self.data
     def give_noRLE(self,data : bytes | bytearray) -> bytearray:
@@ -143,6 +143,7 @@ class instance():
             print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
         self.rle = False
         self.data = data
+        self.end = self.offset + self.data
     def give(self, data : tuple | bytes | bytearray) -> tuple | bytearray: 
         """
         nospecific data modifier used for human interaction or unkown instance type
@@ -164,17 +165,24 @@ class ips():
     """
     class supporting intimate interactions with the normalized ips data.
     """
-    def __init__(self, normalized : dict):
+    def __init__(self, normalized : dict, bitsize : int = 24):
         """
         initialization maps out all instances in normalized dictionary into `instances`
         :raises TypeError: if normalized is not type `dict`
         """
         self.instances = []
+        self.bitsize = bitsize
         if not isinstance(normalized,dict):
             raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
         for offset in normalized.keys():
             self.instances.append(instance(offset=offset,data=normalized[offset]))
-    def get_instances(self,specifier : str | int) -> object:
+
+    def get_instance(self, specifier : str | int | instance) -> object: 
+        hold = self.get_instances(specifier)
+        if len(hold): return hold[0]
+
+
+    def get_instances(self,specifier : str | int) -> tuple:
         """
         return generator by name or ID
         :param specifier: The name or ID of desired instance
@@ -182,8 +190,13 @@ class ips():
         :return: generator to provide all potentially desired instances
         :rtype: object
         """
-        return (match for match in self.instances if (match.name == specifier if type(specifier) == str else match.offset == specifier))
-    def in_range(self,start : int = 0, end : int = None) -> object:
+        return tuple(match for match in self.instances if (match.name == specifier if isinstance(specifier,str) else match.offset == specifier))
+    def in_range(self,start : int = 0, end : int = None) -> tuple:
+        if end is None: end = (2**self.bitsize)
+        elif not isinstance(end, int): raise TypeError("End of range must be integral or None") 
+        if not isinstance(start, int): raise TypeError("start of range must be integral or None")  
+        if start < 0: raise ScopeError("Starting range cannot be negative!") 
+        if end < 0: raise ScopeError("Ending range cannot be negative!")
         """
         returns generator providing instances within a range in offset
         :param int start: Starting offset for search
@@ -193,9 +206,9 @@ class ips():
         :raises TypeError: if start is not integral
         :raises TypeError: if end is not integral
         """
-        return (instance for instance in self.instances if instance.offset > start and (instance.offset < end if type(end) == int else True))
+        return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end)
     
-    def insert(self, new : instance, override : bool = False, sustain : bool = True):
+    def insert(self, new : instance, override : bool = False):
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
         """
         Insert an instance into an ips object.
@@ -203,60 +216,32 @@ class ips():
         :param bool override: Override flag, should clashing data be removed. Disabled by default
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
         """
-        if not isinstance(new,instance):
-            raise TypeError(f"Given instance is not of type `instance`")
         
-        if True in [match.offset == new.offset for match in self.instances] and not override:
-            raise OffsetError("Offset is occupied")
+        if not isinstance(new, instance): raise TypeError("provided instance is not instance")
+        if not isinstance(override, bool): raise TypeError("provided override flag is not of type Bool") 
 
-        if len(self.instances):
-            self.instances.insert(-1, new)
-        
-        lowercheck = tuple(self.in_range(0,new.offset))         #get tuple of instances until offsets
-        if len(lowercheck) > 0:                                 #if there is a preceeding instance
-            lowercheck = lowercheck[-1]                         #retrieve the last
-        else:
-            lowercheck = instance(0,(b"\x00",0),"internal_ips_lowercheck")  #otherwise create object with empty data for comparison
-
-        
-        
-        if lowercheck.end > new.offset:    #if last patch is in range of new patch
-            if override and lowercheck.name != "internal_ips_lowercheck":   #check that this is not the bogus data (this can be ignored)
-                if sustain:                                     #if attempting to maintain as much of the mod as possible
-                    temp = instance(lowercheck.offset,lowercheck.data,lowercheck.name)  #Create temporary object to replace the instance at lowercheck offset
-                    if temp.rle:
-                        temp.give_RLE(temp.data[0],new.offset-lowercheck.offset)    #Write up to offest
-                    else:
-                        temp.give_noRLE(temp.data[:new.offset-lowercheck.offset])   #Write up to offset
-                    self.instances.insert(self.instances.index(lowercheck),temp)
-                    self.remove(lowercheck)
+        lowercheck = tuple(self.in_range(end = new.offset)) 
+        if len(lowercheck):
+            lowercheck = lowercheck[-1] 
+            if lowercheck.end > new.offset:
+                if override: 
+                    self.remove(lowercheck)  
                 else:
-                    self.remove(lowercheck)                     #remove patch if no sustain and taking place with override enabled
-            else:
-                raise OffsetError(f"{lowercheck.name} writes to areas in {new.name}") 
-
-        uppercheck = tuple(self.in_range(new.offset, new.offset + new.size)) 
-
-        if not len(uppercheck):
-            if sustain: temp = (instance(0xFFFFFF, (b"\x00",0), "internal_ips_uppercheck"))
-            elif not override: raise OffsetError(f"Data between offsets {new.offset} and {new.offset + new.data} are already being used.")
+                    raise OffsetError(f"{lowercheck.name} write into areas occupied by {new.name}") 
+        uppercheck = tuple(self.in_range(new.offset, new.end)) 
+        if len(uppercheck):
+            if override:
+                for ins in uppercheck: self.remove(ins)
+            else: raise OffsetError(f"{new.name} writes into areas between {uppercheck[0].offset} and {uppercheck[-1].end}")
 
 
-        if uppercheck[0].name != "internal_ips_uppercheck" and override:
-            for ins in uppercheck[:-1 if sustain else None]:
-                self.instances.remove(ins) 
-        uppercheck = uppercheck[-1] 
+        uppercheck = tuple(self.in_range(new.end,16842750 if self.bitsize >= 32 else (2**self.bitsize)-1))
+        if len(uppercheck):
+            uppercheck = self.instances.index(uppercheck[0]) 
+        else:
+            uppercheck = -1
+        self.instances.insert(uppercheck,new)
 
-        if sustain and override and not uppercheck.name == "internal_ips_uppercheck":
-            temp = instance(new.offset + new.size, uppercheck.data)
-            if uppercheck.rle:
-                temp.give_RLE(temp.data[0],uppercheck.end - temp.offset)
-            else:
-                temp.give_noRLE(temp.data[uppercheck.end - temp.offset:])
-            self.instances.insert(self.instances.index(uppercheck),temp) 
-            self.remove(uppercheck) 
-
-        self.instances.insert(self.instances.index(temp), new)
 
 
 
@@ -279,20 +264,25 @@ class ips():
         else: raise TypeError("given patch is not an instance.")
         return instances
 
-    """
-    def move(self, Instance : instance, offset : int,override : bool = False, sustain : bool = True):
+    
+    def move(self, Instance : instance, offset : int,override : bool = False):
         if isinstance(Instance,(str,int)):
-            Instance = self.get_instance(Instance)[0]
+            Instance = self.get_instances(Instance) 
+            if len(Instance): 
+                Instance = Instance[0] 
+            else: raise IndexError("No Instance exists by discriminator provided")
         if not isinstance(Instance,instance):
-            raise Exception(f"Type Error : {Instance} is not an instance.")
+            raise Exception(f"Type Error : {Instance} is not an instance or instance name/offset.")
         if Instance not in self.instances:
             raise Exception(f"Key Error : {Instance} is not an instance in this class")
-        if offset > 0xFFFFFF or offset < 0:
-            raise Exception(f"Number Error : {offset} is either over 16777215 or smaller than zero which is impossible!")
-        hold = Instance 
-        self.instances.remove(Instance)  
-        self.insert(instance(offset,hold.data,hold.name),override, sustain)
-    """
+        if offset > (2**self.bitsize)-1 or offset < 0:
+            raise Exception(f"Number Error : {offset} is either over {16842750 if self.bitsize >= 32 else (2**self.bitsize)-1} or smaller than zero which is impossible!")
+        self.remove(Instance)
+        try:
+            self.insert(instance(offset,Instance.data,Instance.name),override)
+        except OffsetError:
+            self.insert(Instance)
+    
         
 
 def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int | str = 24) -> bytearray:
@@ -374,7 +364,7 @@ def apply(patch : ips, base : bytes | bytearray) -> bytearray:
         :raises TypeError: if ips is not of type ips
         """
         try:
-            if type(patch) != ips:
+            if not isinstance(patch, ips):
                 raise TypeError("IPS given is not of type ips!")
             if not isinstance(base,(bytes,bytearray)):
                 raise TypeError("base given is not of type bytes or bytearray!")
