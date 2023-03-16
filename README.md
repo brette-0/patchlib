@@ -21,7 +21,7 @@ Or can be installed with:
 |APS|ipsluna.ips|Not yet|None|None|None
 |RUP|ipsluna.rup|Not yet|None|None|None
 |NPS|ipsluna.nps|Not yet|None|None|None
-|Luna|ipsluna.luna|Not yet|None|None
+|Luna|ipsluna.luna|Not yet|None|None|None
 
 Using `import ipsluna` will install all packages with the `importlib` module. `ipsluna` provides no context abundant methods and relies on the package being specified.
 
