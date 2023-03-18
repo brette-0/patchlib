@@ -16,13 +16,172 @@ class ScopeError(Exception):
     Raised when job scope exceeds limitations of IPS.
     """
 
-class FileError(Exception):
-    """
-    Raised when IPS bytearray is illegal.
-    """
+
+    
+        
+        
+
+class ips:
+    class instance:
+        """
+        Task stored in ips file storing data for modification. 
+        """
+        def __init__(self,parent, offset : int,data : bytes | bytearray | tuple,name : str = None):
+            """
+            IPS instance initialization 
+            :param int offset: Offset for where the patcher will write to
+            :param str name: The secondary key "name" used to provide more human information on the instance.
+            :param data: The integrity of the IPS 
+            :type data: bytes or bytearray or tuple
+            :raises TypeError: if offset is not integral
+            :raises TypeError: if name is not string or None
+            :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
+            """
+            if not isinstance(data,(bytes,bytearray,tuple)):
+                raise TypeError("Instance data is invalid!")
+            if len(data) != 2 if isinstance(data,tuple) else False:
+                raise ScopeError("Tuple has invalid data!")
+            if not isinstance(offset, int):
+                raise TypeError("Offset is not integral!")
+            if offset > 0xFFFFFF:
+                raise ScopeError("Offset exceeds limitations of IPS")
+            if offset < 0:
+                raise ScopeError("Offset is below zero and therefore impossible!")
+            if not isinstance(name, str) and name is not None:
+                raise TypeError("Given name is not of type string and is therefore unsuitable")
+            self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
+            self.size = data[1] if self.rle else len(data)
+            self.end = self.offset + self.size
+            self.name = name if name is not None else f"Unnamed patch at {offset}"
+        def give_name(self,name : str):
+            """
+            Allows the user to provide the instance a specified name
+            :type str name: The name to give to the instance
+            :raises TypeError: if name is not string
+            """
+            if not isinstance(name, str):
+                raise TypeError("Given name is not of type String!")
+            self.name = name
+        def noRLE(self):
+            """
+            Converts instance of RLE to noRLE
+            """
+            if self.rle:
+                self.rle = False
+                self.data = tuple(self.data[1]*self.data[0])
+            self.end = self.offset + self.size
+        def RLE(self):
+            if not self.rle:
+                temp = bytes([self.data[1]])*self.size 
+                if self.data == temp: self.data = self.data[1],self.size
+                else: raise ScopeError("Cannot convert non-repeating data into RLE")
 
 
-def normalize(patch : bytes | bytearray) -> dict:
+        def iwrapper(give : object, self : object, data : bytes | bytearray | int, override : int = False, sustain : bool = True) -> object:
+            ips = self.parent
+            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("`data` must be type `bytes`, `bytearray`, or `tuple`.") 
+            if not isinstance(override,bool): raise TypeError("`override` must be type `bool`")
+            if not isinstance(sustain,bool): raise TypeError("`sustain` must be type `bool`")
+            end = self.offset + (data[0] if isinstance(data,tuple) else len(data))
+            if end > (2**ips.bitsize)-1: raise ScopeError("`data` writes beyond scope") 
+            if self.end == self.offset: 
+                if isinstance(data, tuple): print("Wriring Zero data will increase the Filesize, Complexity and occupy an offset")
+                else: raise ScopeError("noRLE data cannot have length of zero")
+            def wrap():
+                clashes = ips.in_range(self.offset,end)
+                if len(clashes):
+                    if override: 
+                        for ins in clashes: ips.remove(ins)
+                    else: raise ScopeError("instance `data` exceeds scope of parent")
+                return give(data)
+            return wrap
+
+        @iwrapper
+        def give_RLE(self,data : tuple,override : int = False, sustain : bool = True) -> tuple:
+            """
+            Gives immediate RLE instance to specified instance.
+            :param byte: The byte to be looped in RLE
+            :param int length: The run length for the byte.
+            :type byte: bytes or bytearray
+            :return: tuple by (byte,offset)
+            :rtype: tuple
+            :raises TypeError: if byte is not of type `bytes` or `bytearray`
+            :raises TypeError: if length is not integral
+            :raises ScopeError: if length is over 0xFF or less than zero.
+            :raises ScopeError: if length of `byte` is does not equal one.
+            """
+            if not isinstance(data[1],tuple):
+                raise TypeError(f"Type Error : {data[1]} is not a tuple object.")
+            if not isinstance(data[0], int):
+                raise TypeError(f"Type Error : {data[0]} is not integer")
+            if data[0] > 256 or data[0] < 0:
+                raise ScopeError(f"RLE Error : {data[0]} is either above 255 and therefore too large, or smaller than zero and therefore impossible!")
+            if len(data[1]) != 1:
+                raise ScopeError(f"RLE ERROR : {data[1]} is either too long or zero length, please ensure that this is a singular byte!")
+            if not data[0]:
+                print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
+            self.rle = True 
+            self.data = data
+            self.end = self.offset + self.size
+            return self.data
+
+        @iwrapper
+        def give_noRLE(self,data : bytes | bytearray,override : int = False, sustain : bool = True) -> bytearray:
+            """
+            Gives immediate noRLE instance to specified instance.
+            :param data: The byte to be looped in RLE
+            :type data: bytes or bytearray
+            :return: bytearray of data
+            :rtype: bytearray
+            :raises TypeError: if data is not of type `bytes` or `bytearray`
+            :raises ScopeError: if length of data is over 0xFFFF or less than zero.
+            """
+            if not isinstance(data,(bytes,bytearray)):
+                raise TypeError(f"Given data is not bytes or bytearray type!")
+            if len(data) > 0xFFFF or len(data) < 0:
+                raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
+            if len(data) == 0:
+                print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
+            self.rle = False
+            self.data = data
+            self.size = len(self.data)
+            self.end = self.offset + self.size
+
+        @iwrapper
+        def give(self, data : tuple | bytes | bytearray,override : int = False, sustain : bool = True) -> tuple | bytearray: 
+            """
+            nospecific data modifier used for human interaction or unkown instance type
+            :param data: The data to insert into the instance
+            :type data: bytes or bytearray or tuple
+            :return: bytearray or tuple of data
+            :rtype: tuple or bytearray
+            :raises TypeError: if data is not of type `bytes` or `bytearray`
+            :raises ScopeError: if length of data is over 0xFFFF or less than zero.
+            """
+            if isinstance(data,tuple): return self.give_RLE(data) 
+            if not isinstance(data,(bytes,bytearray)): return self.give_noRLE(data)
+            raise TypeError("Unexpected type for data!")
+        """
+        class supporting intimate interactions with the normalized ips data.
+        """
+
+    def __init__(self, patch : bytes | bytearray, bitsize : int = 24):
+        """
+        initialization maps out all instances in normalized dictionary into `instances`
+        :raises TypeError: if normalized is not type `dict`
+        """
+        patch = self.normalize(patch)
+        if not isinstance(patch,dict):
+            raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
+        if not isinstance(bitsize, int):
+            raise TypeError("specified bitsize is not type `int`")
+        if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
+        self.instances = []
+        self.bitsize = bitsize
+        
+        for offset in patch: self.instances.append(self,self.instance(offset=offset,data=patch[offset]))
+
+    def normalize(self, patch : bytes | bytearray) -> dict:
       """
       Normalizes raw ips bytearray | bytes file.
       :param patch: the raw contents of the patch
@@ -38,150 +197,12 @@ def normalize(patch : bytes | bytearray) -> dict:
             changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
             count += size - 3
         else:  #Handle RLE, only if NON-RLE is not met     
-            changes[int(patch[count-8:count - 5].hex(),16)] = (bytes([patch[count - 1]]),int(patch[count - 3:count - 1].hex(),16))       
+            changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]),    
       return changes
 
-
-
-class instance():
-    """
-    Task stored in ips file storing data for modification. 
-    """
-    def __init__(self,offset : int,data : bytes | bytearray | tuple,name : str = None):
-        """
-        IPS instance initialization 
-        :param int offset: Offset for where the patcher will write to
-        :param str name: The secondary key "name" used to provide more human information on the instance.
-        :param data: The integrity of the IPS 
-        :type data: bytes or bytearray or tuple
-        :raises TypeError: if offset is not integral
-        :raises TypeError: if name is not string or None
-        :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
-        """
-        if not isinstance(data,(bytes,bytearray,tuple)):
-            raise TypeError("Instance data is invalid!")
-        if len(data) != 2 if isinstance(data,tuple) else False:
-            raise FileError("Tuple has invalid data!")
-        if not isinstance(offset, int):
-            raise TypeError("Offset is not integral!")
-        if offset > 0xFFFFFF:
-            raise ScopeError("Offset exceeds limitations of IPS")
-        if offset < 0:
-            raise ScopeError("Offset is below zero and therefore impossible!")
-        if not isinstance(name, str) and name is not None:
-            raise TypeError("Given name is not of type string and is therefore unsuitable")
-        self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
-        self.size = data[1] if self.rle else len(data)
-        self.end = self.offset + self.size
-        self.name = name if name is not None else f"Unnamed patch at {offset}"
-    def give_name(self,name : str):
-        """
-        Allows the user to provide the instance a specified name
-        :type str name: The name to give to the instance
-        :raises TypeError: if name is not string
-        """
-        if not isinstance(name, str):
-            raise TypeError("Given name is not of type String!")
-        self.name = name
-    def noRLE(self):
-        """
-        Converts instance of RLE to noRLE
-        """
-        if self.rle:
-            self.rle = False
-            self.data = tuple(self.data[0]*self.data[1])
-        self.end = self.offset + self.size
-
-    
-    
-
- 
-
-        
-    def give_RLE(self,byte : bytes | bytearray,length : int) -> tuple:
-        """
-        Gives immediate RLE instance to specified instance.
-        :param byte: The byte to be looped in RLE
-        :param int length: The run length for the byte.
-        :type byte: bytes or bytearray
-        :return: tuple by (byte,offset)
-        :rtype: tuple
-        :raises TypeError: if byte is not of type `bytes` or `bytearray`
-        :raises TypeError: if length is not integral
-        :raises ScopeError: if length is over 0xFF or less than zero.
-        :raises ScopeError: if length of `byte` is does not equal one.
-        """
-        if not isinstance(byte,(bytes,bytearray)):
-            raise TypeError(f"Type Error : {byte} is not bytes or bytearray object.")
-        if not isinstance(length, int):
-            raise TypeError(f"Type Error : {length} is not integer")
-        if length > 256 or length < 0:
-            raise ScopeError(f"RLE Error : {length} is either above 255 and therefore too large, or smaller than zero and therefore impossible!")
-        if len(byte) != 1:
-            raise ScopeError(f"RLE ERROR : {byte} is either too long or zero length, please ensure that this is a singular byte!")
-        if not length:
-            print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
-        self.rle = True 
-        self.data = byte, length
-        self.end = self.offset + self.size
-        return self.data
-    def give_noRLE(self,data : bytes | bytearray) -> bytearray:
-        """
-        Gives immediate noRLE instance to specified instance.
-        :param data: The byte to be looped in RLE
-        :type data: bytes or bytearray
-        :return: bytearray of data
-        :rtype: bytearray
-        :raises TypeError: if data is not of type `bytes` or `bytearray`
-        :raises ScopeError: if length of data is over 0xFFFF or less than zero.
-        """
-        if not isinstance(data,(bytes,bytearray)):
-            raise TypeError(f"Given data is not bytes or bytearray type!")
-        if len(data) > 0xFFFF or len(data) < 0:
-            raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
-        if len(data) == 0:
-            print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
-        self.rle = False
-        self.data = data
-        self.end = self.offset + self.data
-    def give(self, data : tuple | bytes | bytearray) -> tuple | bytearray: 
-        """
-        nospecific data modifier used for human interaction or unkown instance type
-        :param data: The data to insert into the instance
-        :type data: bytes or bytearray or tuple
-        :return: bytearray or tuple of data
-        :rtype: tuple or bytearray
-        :raises TypeError: if data is not of type `bytes` or `bytearray`
-        :raises ScopeError: if length of data is over 0xFFFF or less than zero.
-        """
-        if isinstance(data,tuple): return self.give_RLE(data) 
-        if not isinstance(data,(bytes,bytearray)): return self.give_noRLE(data)
-        raise TypeError("Unexpected type for data!")
-    
-        
-        
-
-class ips():
-    """
-    class supporting intimate interactions with the normalized ips data.
-    """
-    def __init__(self, normalized : dict, bitsize : int = 24):
-        """
-        initialization maps out all instances in normalized dictionary into `instances`
-        :raises TypeError: if normalized is not type `dict`
-        """
-        self.instances = []
-        self.bitsize = bitsize
-        if not isinstance(normalized,dict):
-            raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
-        for offset in normalized.keys():
-            self.instances.append(instance(offset=offset,data=normalized[offset]))
-
-    def get_instance(self, specifier : str | int | instance) -> object: 
+    def get_instance(self, specifier : str | int | instance) -> object | None: 
         hold = self.get_instances(specifier)
         if len(hold): return hold[0]
-
-
     def get_instances(self,specifier : str | int) -> tuple:
         """
         return generator by name or ID
@@ -192,7 +213,7 @@ class ips():
         """
         return tuple(match for match in self.instances if (match.name == specifier if isinstance(specifier,str) else match.offset == specifier))
     def in_range(self,start : int = 0, end : int = None) -> tuple:
-        if end is None: end = (2**self.bitsize)
+        if end is None: end = (2**self.bitsize)-1
         elif not isinstance(end, int): raise TypeError("End of range must be integral or None") 
         if not isinstance(start, int): raise TypeError("start of range must be integral or None")  
         if start < 0: raise ScopeError("Starting range cannot be negative!") 
@@ -206,9 +227,8 @@ class ips():
         :raises TypeError: if start is not integral
         :raises TypeError: if end is not integral
         """
-        return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end)
-    
-    def insert(self, new : instance, override : bool = False):
+        return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end) 
+    def insert(self, new : instance, override : bool = False, sustain : bool = True):
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
         """
         Insert an instance into an ips object.
@@ -224,14 +244,28 @@ class ips():
         if len(lowercheck):
             lowercheck = lowercheck[-1] 
             if lowercheck.end > new.offset:
-                if override: 
-                    self.remove(lowercheck)  
+                if override:
+                    if sustain:
+                        if lowercheck.rle:
+                            lowercheck.give_RLE(lowercheck[0],new.offset-lowercheck.end)
+                        else: 
+                            lowercheck.give_noRLE(lowercheck.data[lowercheck.offset-new.end:])
+                    else: 
+                        self.remove(lowercheck)  
                 else:
                     raise OffsetError(f"{lowercheck.name} write into areas occupied by {new.name}") 
         uppercheck = tuple(self.in_range(new.offset, new.end)) 
         if len(uppercheck):
             if override:
-                for ins in uppercheck: self.remove(ins)
+                for ins in uppercheck: self.remove(ins) 
+                uppercheck = uppercheck[-1] 
+                if sustain: 
+                    if uppercheck.rle:
+                        uppercheck.give_RLE(uppercheck.data[1],uppercheck.offset-new.end)
+                    else: 
+                        uppercheck.give_noRLE(uppercheck.data[uppercheck.offset-new.end:])
+                    self.move(uppercheck,new.end)
+                else: self.remove(uppercheck)  
             else: raise OffsetError(f"{new.name} writes into areas between {uppercheck[0].offset} and {uppercheck[-1].end}")
 
 
@@ -240,16 +274,7 @@ class ips():
             uppercheck = self.instances.index(uppercheck[0]) 
         else:
             uppercheck = -1
-        self.instances.insert(uppercheck,new)
-
-
-
-
-        
-        
-
-
-       
+        self.instances.insert(uppercheck,new)    
     def remove(self, instances : instance | str | int) -> instance | tuple:
         """
         Used to remove an instance from an ips class
@@ -262,9 +287,7 @@ class ips():
             for ins in tuple(self.get_instances(instances)): self.remove(ins)
         elif isinstance(instances,instance): self.instances.remove(instances)
         else: raise TypeError("given patch is not an instance.")
-        return instances
-
-    
+        return instances   
     def move(self, Instance : instance, offset : int,override : bool = False):
         if isinstance(Instance,(str,int)):
             Instance = self.get_instances(Instance) 
@@ -285,7 +308,7 @@ class ips():
     
         
 
-def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int | str = 24) -> bytearray:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int = 24) -> bytearray:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
@@ -298,7 +321,7 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
         :raises TypeError: if base or prepatch are not bytes or bytearray
         :raises TypeError: if legal is not bool
         :raises ScopeError: if modified file is unsuitabel for IPS generation
-        :raises FileError: if IPS file bytes or bytearray contains illegal data.
+        :raises ScopeError: if IPS file bytes or bytearray contains illegal data.
         """
 
         #legal may be None, in which it will prioritize legality but will contain illegal data should it be needed to generate the file
@@ -307,10 +330,9 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
         if not isinstance(prepatch,(bytes,bytearray)): raise TypeError("Modified file must be bytes or bytearray") #no solution
         if not isinstance(base,(bytes,bytearray)): raise TypeError("Original file must be bytes or bytearray") #no solution
         if not (isinstance(legal,bool) or legal is None): raise TypeError("`Legal` parameter must be Type `bool`")         #no solution
-        if isinstance(bitsize,str):
-            if True in [l for l in bitsize if l not in list(range(10))]: raise TypeError("`bitsize` parameter must only contain positive integral values")
-            bitsize = int(bitsize)
-        elif not isinstance(bitsize,int): raise TypeError("`bitsize` parameter must be Type `int` or `str`")         #no solution
+        if isinstance(bitsize,int):
+            if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
+        else: raise TypeError("`bitsize` parameter must be Type `int` or `str`")         #no solution
 
         fileupperlimit= 16842750 if bitsize >= 32 else (2**bitsize)-1
 
@@ -376,8 +398,8 @@ def apply(patch : ips, base : bytes | bytearray) -> bytearray:
                 #else:                                                  #otherwise we are appending new bytes
                 #   build+= b"\x00" * (instance.offset - len(build))    #and therefore will append zerodata until the first offset
                 #if instance.rle:                                       #if instance is of type rle
-                #   build+= instance.data[0]*instance.data[1]           #append bytes of hunk byte with hunk length | byte : length
-                build+= (base[len(build):instance.offset] if len(base) > instance.offset else b"\x00" * (instance.offset - len(build)))+(instance.data[0]*instance.data[1] if instance.rle else instance.data)
+                #   build+= instance.data[1]*instance.data[0]           #append bytes of hunk byte with hunk length | byte : length
+                build+= (base[len(build):instance.offset] if len(base) > instance.offset else b"\x00" * (instance.offset - len(build)))+(instance.data[1]*instance.data[0] if instance.rle else instance.data)
             return build+ base[len(build):]
         except:
             raise Exception("ips class contains impossible data")
