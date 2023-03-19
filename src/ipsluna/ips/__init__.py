@@ -53,6 +53,8 @@ class ips:
             self.size = data[1] if self.rle else len(data)
             self.end = self.offset + self.size
             self.name = name if name is not None else f"Unnamed patch at {offset}"
+
+            self.parent = parent
         def give_name(self,name : str):
             """
             Allows the user to provide the instance a specified name
@@ -77,23 +79,23 @@ class ips:
                 else: raise ScopeError("Cannot convert non-repeating data into RLE")
 
 
-        def iwrapper(give : object, self : object, data : bytes | bytearray | int, override : int = False, sustain : bool = True) -> object:
-            ips = self.parent
-            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("`data` must be type `bytes`, `bytearray`, or `tuple`.") 
-            if not isinstance(override,bool): raise TypeError("`override` must be type `bool`")
-            if not isinstance(sustain,bool): raise TypeError("`sustain` must be type `bool`")
-            end = self.offset + (data[0] if isinstance(data,tuple) else len(data))
-            if end > (2**ips.bitsize)-1: raise ScopeError("`data` writes beyond scope") 
-            if self.end == self.offset: 
-                if isinstance(data, tuple): print("Wriring Zero data will increase the Filesize, Complexity and occupy an offset")
-                else: raise ScopeError("noRLE data cannot have length of zero")
-            def wrap():
-                clashes = ips.in_range(self.offset,end)
+        def iwrapper(give) -> object:
+            def wrap(self, data : bytes | bytearray | int, override : int = False, sustain : bool = True):
+                ips = self.parent
+                if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("`data` must be type `bytes`, `bytearray`, or `tuple`.") 
+                if not isinstance(override,bool): raise TypeError("`override` must be type `bool`")
+                if not isinstance(sustain,bool): raise TypeError("`sustain` must be type `bool`")
+                end = self.offset + (data[0] if isinstance(data,tuple) else len(data))
+                if end > (2**ips.bitsize)-1: raise ScopeError("`data` writes beyond scope") 
+                if self.end == self.offset: 
+                    if isinstance(data, tuple): print("Wriring Zero data will increase the Filesize, Complexity and occupy an offset")
+                    else: raise ScopeError("noRLE data cannot have length of zero")
+                    clashes = ips.in_range(self.offset,end)
                 if len(clashes):
                     if override: 
                         for ins in clashes: ips.remove(ins)
                     else: raise ScopeError("instance `data` exceeds scope of parent")
-                return give(data)
+                give(self,data,override,sustain)
             return wrap
 
         @iwrapper
@@ -179,7 +181,7 @@ class ips:
         self.instances = []
         self.bitsize = bitsize
         
-        for offset in patch: self.instances.append(self,self.instance(offset=offset,data=patch[offset]))
+        for offset in patch: self.instances.append(self,self.instance(self,offset=offset,data=patch[offset]))
 
     def normalize(self, patch : bytes | bytearray) -> dict:
       """
@@ -237,7 +239,7 @@ class ips:
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
         """
         
-        if not isinstance(new, instance): raise TypeError("provided instance is not instance")
+        if not isinstance(new, self.instance): raise TypeError("provided instance is not instance")
         if not isinstance(override, bool): raise TypeError("provided override flag is not of type Bool") 
 
         lowercheck = tuple(self.in_range(end = new.offset)) 
@@ -285,7 +287,7 @@ class ips:
         """
         if isinstance(instances,(str,int)):
             for ins in tuple(self.get_instances(instances)): self.remove(ins)
-        elif isinstance(instances,instance): self.instances.remove(instances)
+        elif isinstance(instances,self.instance): self.instances.remove(instances)
         else: raise TypeError("given patch is not an instance.")
         return instances   
     def move(self, Instance : instance, offset : int,override : bool = False):
@@ -294,7 +296,7 @@ class ips:
             if len(Instance): 
                 Instance = Instance[0] 
             else: raise IndexError("No Instance exists by discriminator provided")
-        if not isinstance(Instance,instance):
+        if not isinstance(Instance,self.instance):
             raise Exception(f"Type Error : {Instance} is not an instance or instance name/offset.")
         if Instance not in self.instances:
             raise Exception(f"Key Error : {Instance} is not an instance in this class")
@@ -302,7 +304,7 @@ class ips:
             raise Exception(f"Number Error : {offset} is either over {16842750 if self.bitsize >= 32 else (2**self.bitsize)-1} or smaller than zero which is impossible!")
         self.remove(Instance)
         try:
-            self.insert(instance(offset,Instance.data,Instance.name),override)
+            self.insert(self.instance(offset,Instance.data,Instance.name),override)
         except OffsetError:
             self.insert(Instance)
     
@@ -399,7 +401,7 @@ def apply(patch : ips, base : bytes | bytearray) -> bytearray:
                 #   build+= b"\x00" * (instance.offset - len(build))    #and therefore will append zerodata until the first offset
                 #if instance.rle:                                       #if instance is of type rle
                 #   build+= instance.data[1]*instance.data[0]           #append bytes of hunk byte with hunk length | byte : length
-                build+= (base[len(build):instance.offset] if len(base) > instance.offset else b"\x00" * (instance.offset - len(build)))+(instance.data[1]*instance.data[0] if instance.rle else instance.data)
+                build+= (b"\x00" * (instance.offset - len(build)) if len(base) < instance.offset else base[len(build):instance.offset])+(instance.data[1]*instance.data[0] if instance.rle else instance.data)
             return build+ base[len(build):]
         except:
             raise Exception("ips class contains impossible data")
