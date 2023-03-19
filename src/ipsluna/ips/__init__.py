@@ -1,10 +1,4 @@
-def i2b(number : int,bytesize : int) -> bytearray: #convert integral number to xbytes
-    build = []
-    for depth in range(bytesize-1,-1,-1):
-        build.append(number//(256**depth))
-        number -= (number//(256**depth))*(256**depth)
-    return bytes(build)
-
+from ctypes import c_ulong
 class OffsetError(Exception):
     """
     Raised when attepting to perform an illegal operation due to offset clashing
@@ -26,7 +20,7 @@ class ips:
         """
         Task stored in ips file storing data for modification. 
         """
-        def __init__(self,parent, offset : int,data : bytes | bytearray | tuple,name : str = None):
+        def __init__(self, offset : int,data : bytes | bytearray | tuple,name : str = None):
             """
             IPS instance initialization 
             :param int offset: Offset for where the patcher will write to
@@ -37,24 +31,18 @@ class ips:
             :raises TypeError: if name is not string or None
             :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
             """
-            if not isinstance(data,(bytes,bytearray,tuple)):
-                raise TypeError("Instance data is invalid!")
-            if len(data) != 2 if isinstance(data,tuple) else False:
-                raise ScopeError("Tuple has invalid data!")
-            if not isinstance(offset, int):
-                raise TypeError("Offset is not integral!")
-            if offset > 0xFFFFFF:
-                raise ScopeError("Offset exceeds limitations of IPS")
-            if offset < 0:
-                raise ScopeError("Offset is below zero and therefore impossible!")
-            if not isinstance(name, str) and name is not None:
-                raise TypeError("Given name is not of type string and is therefore unsuitable")
+            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")
+            if len(data) != 2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
+            if not isinstance(offset, int): raise TypeError("Offset is not integral!")
+            if offset > min(0xFFFFFF, (2**super().bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
+            if not isinstance(name, str) and name is not None: raise TypeError("Given name is not of type string and is therefore unsuitable")
             self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
             self.size = data[1] if self.rle else len(data)
             self.end = self.offset + self.size
             self.name = name if name is not None else f"Unnamed patch at {offset}"
 
-            self.parent = parent
+            
         def give_name(self,name : str):
             """
             Allows the user to provide the instance a specified name
@@ -81,19 +69,18 @@ class ips:
 
         def iwrapper(give) -> object:
             def wrap(self, data : bytes | bytearray | int, override : int = False, sustain : bool = True):
-                ips = self.parent
                 if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("`data` must be type `bytes`, `bytearray`, or `tuple`.") 
                 if not isinstance(override,bool): raise TypeError("`override` must be type `bool`")
                 if not isinstance(sustain,bool): raise TypeError("`sustain` must be type `bool`")
                 end = self.offset + (data[0] if isinstance(data,tuple) else len(data))
-                if end > (2**ips.bitsize)-1: raise ScopeError("`data` writes beyond scope") 
+                if end > min(0xFFFF,(2**super().bitsize)-1): raise ScopeError("`data` writes beyond scope") 
                 if self.end == self.offset: 
                     if isinstance(data, tuple): print("Wriring Zero data will increase the Filesize, Complexity and occupy an offset")
                     else: raise ScopeError("noRLE data cannot have length of zero")
-                    clashes = ips.in_range(self.offset,end)
+                    clashes = super().in_range(self.offset,end)
                 if len(clashes):
                     if override: 
-                        for ins in clashes: ips.remove(ins)
+                        for ins in clashes: super().remove(ins)
                     else: raise ScopeError("instance `data` exceeds scope of parent")
                 give(self,data,override,sustain)
             return wrap
@@ -116,7 +103,7 @@ class ips:
                 raise TypeError(f"Type Error : {data[1]} is not a tuple object.")
             if not isinstance(data[0], int):
                 raise TypeError(f"Type Error : {data[0]} is not integer")
-            if data[0] > 256 or data[0] < 0:
+            if data[0] > min(0xFFFF, (2**super().bitsize)-1) or data[0] < 0:
                 raise ScopeError(f"RLE Error : {data[0]} is either above 255 and therefore too large, or smaller than zero and therefore impossible!")
             if len(data[1]) != 1:
                 raise ScopeError(f"RLE ERROR : {data[1]} is either too long or zero length, please ensure that this is a singular byte!")
@@ -128,7 +115,7 @@ class ips:
             return self.data
 
         @iwrapper
-        def give_noRLE(self,data : bytes | bytearray,override : int = False, sustain : bool = True) -> bytearray:
+        def give_noRLE(self,data : bytes | bytearray,override : int = False, sustain : bool = True) -> bytes:
             """
             Gives immediate noRLE instance to specified instance.
             :param data: The byte to be looped in RLE
@@ -138,18 +125,14 @@ class ips:
             :raises TypeError: if data is not of type `bytes` or `bytearray`
             :raises ScopeError: if length of data is over 0xFFFF or less than zero.
             """
-            if not isinstance(data,(bytes,bytearray)):
-                raise TypeError(f"Given data is not bytes or bytearray type!")
-            if len(data) > 0xFFFF or len(data) < 0:
-                raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
-            if len(data) == 0:
-                print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
+            if not isinstance(data,(bytes,bytearray)): raise TypeError(f"Given data is not bytes or bytearray type!")
+            if len(data) > min(0xFFFF, (2**super().bitsize)-1) or len(data) < 0: raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
+            if len(data) == 0: print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
             self.rle = False
             self.data = data
             self.size = len(self.data)
             self.end = self.offset + self.size
 
-        @iwrapper
         def give(self, data : tuple | bytes | bytearray,override : int = False, sustain : bool = True) -> tuple | bytearray: 
             """
             nospecific data modifier used for human interaction or unkown instance type
@@ -160,8 +143,8 @@ class ips:
             :raises TypeError: if data is not of type `bytes` or `bytearray`
             :raises ScopeError: if length of data is over 0xFFFF or less than zero.
             """
-            if isinstance(data,tuple): return self.give_RLE(data) 
-            if not isinstance(data,(bytes,bytearray)): return self.give_noRLE(data)
+            if isinstance(data,tuple): return self.give_RLE(data, override, sustain) 
+            if not isinstance(data,(bytes,bytearray)): return self.give_noRLE(data, override, sustain)
             raise TypeError("Unexpected type for data!")
         """
         class supporting intimate interactions with the normalized ips data.
@@ -172,35 +155,24 @@ class ips:
         initialization maps out all instances in normalized dictionary into `instances`
         :raises TypeError: if normalized is not type `dict`
         """
-        patch = self.normalize(patch)
-        if not isinstance(patch,dict):
+        count, changes,patch = 0, {}, patch[5:-3]
+        while count != len(patch):
+            count += 8
+            if patch[count - 5] > 0 or patch[count - 4] > 0:
+                size = int(patch[count - 5:count - 3].hex(),16)
+                changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
+                count += size - 3
+            else:  #Handle RLE, only if NON-RLE is not met     
+                changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]),    
+        if not isinstance(changes,dict):
             raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
         if not isinstance(bitsize, int):
             raise TypeError("specified bitsize is not type `int`")
-        if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
+        if bitsize % 8 or not bitsize or bitsize > c_ulong(-1).value.bit_length(): raise ScopeError("specified bitsize impossible")
         self.instances = []
         self.bitsize = bitsize
         
-        for offset in patch: self.instances.append(self,self.instance(self,offset=offset,data=patch[offset]))
-
-    def normalize(self, patch : bytes | bytearray) -> dict:
-      """
-      Normalizes raw ips bytearray | bytes file.
-      :param patch: the raw contents of the patch
-      :type patch: bytes or bytearray
-      :return: Dictionary by offset: data, or offset: (byte, Length)
-      :rtype: dict
-      """
-      count, changes,patch = 0, {}, patch[5:-3]
-      while count != len(patch):
-        count += 8
-        if patch[count - 5] > 0 or patch[count - 4] > 0:
-            size = int(patch[count - 5:count - 3].hex(),16)
-            changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
-            count += size - 3
-        else:  #Handle RLE, only if NON-RLE is not met     
-            changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]),    
-      return changes
+        for offset in changes: self.instances.append(self,self.instance(self,offset=offset,data=changes[offset]))
 
     def get_instance(self, specifier : str | int | instance) -> object | None: 
         hold = self.get_instances(specifier)
@@ -271,7 +243,7 @@ class ips:
             else: raise OffsetError(f"{new.name} writes into areas between {uppercheck[0].offset} and {uppercheck[-1].end}")
 
 
-        uppercheck = tuple(self.in_range(new.end,16842750 if self.bitsize >= 32 else (2**self.bitsize)-1))
+        uppercheck = tuple(self.in_range(new.end,0xFFFFFF+0xFFFF if self.bitsize >= 32 else (2**self.bitsize)-1))
         if len(uppercheck):
             uppercheck = self.instances.index(uppercheck[0]) 
         else:
@@ -301,7 +273,7 @@ class ips:
         if Instance not in self.instances:
             raise Exception(f"Key Error : {Instance} is not an instance in this class")
         if offset > (2**self.bitsize)-1 or offset < 0:
-            raise Exception(f"Number Error : {offset} is either over {16842750 if self.bitsize >= 32 else (2**self.bitsize)-1} or smaller than zero which is impossible!")
+            raise Exception(f"Number Error : {offset} is either over {0xFFFF + 0xFFFF if self.bitsize >= 32 else (2**self.bitsize)-1} or smaller than zero which is impossible!")
         self.remove(Instance)
         try:
             self.insert(self.instance(offset,Instance.data,Instance.name),override)
@@ -310,7 +282,7 @@ class ips:
     
         
 
-def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int = 24) -> bytearray:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int = 24) -> bytes:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
@@ -347,7 +319,7 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
             count = 0;build=b""        
             while count != len(prepatch):
                 if count == len(prepatch)-1:
-                    build += i2b(count,3)+b"\x00\x01"+bytes([prepatch[count]])
+                    build += count.to_bytes(3,"big")+b"\x00\x01"+bytes([prepatch[count]])
                     count += 1
                 elif prepatch[count] == base[count] if count < len(base) else prepatch[count] == 0:
                     count += 1
@@ -360,10 +332,10 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
                         else:
                             length = readahead+1
                     if length > 8: 
-                        build += i2b(count,3)+b"\x00\x00"+i2b(length-1,2)+bytes([prepatch[count]])
+                        build += count.to_bytes(3,"big")+b"\x00\x00"+(length-1).to_bytes(2,"big")+bytes([prepatch[count]])
                         count += length-1
                     else:
-                        build += i2b(count,3)+i2b(length,2)+prepatch[count:count+length]
+                        build += count.to_bytes(3,"big")+length.to_bytes(2,"big")+prepatch[count:count+length]
                         count += length
                 else:
                     for readahead in range(min(0xFFFF,len(prepatch)-count)):
@@ -371,11 +343,11 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
                             break 
                         else:
                             length = readahead+1 
-                    build += i2b(count,3)+i2b(length,2)+prepatch[count:count+length]
+                    build += count.to_bytes(3,"big")+length.to_bytes(2,"big")+prepatch[count:count+length]
                     count += length
             return b"PATCH"+build+b"EOF" #return bytearray of IPS file
 
-def apply(patch : ips, base : bytes | bytearray) -> bytearray:
+def apply(patch : ips, base : bytes | bytearray) -> bytes:
         """
         Used to apply an IPS file when applying a patch file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
