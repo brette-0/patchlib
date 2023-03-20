@@ -7,7 +7,7 @@ Or can be installed with:
 |--|--|
 |`pip install ipsluna`  | `pip3 install ipsluna` |
  - *Intended for Python 3.7 and above*
- - Uses [`ctypes`](https://docs.python.org/3/library/ctypes.html)
+ - Uses [`ctypes`](https://docs.python.org/3/library/ctypes.html) for unsigned upperlimit retrieval
  - Uses [`Importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
  - Currently can only use `ips` files.
  
