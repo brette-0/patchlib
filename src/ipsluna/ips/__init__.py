@@ -155,24 +155,30 @@ class ips:
         initialization maps out all instances in normalized dictionary into `instances`
         :raises TypeError: if normalized is not type `dict`
         """
-        count, changes,patch = 0, {}, patch[5:-3]
-        while count != len(patch):
-            count += 8
-            if patch[count - 5] > 0 or patch[count - 4] > 0:
-                size = int(patch[count - 5:count - 3].hex(),16)
-                changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
-                count += size - 3
-            else:  #Handle RLE, only if NON-RLE is not met     
-                changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]),    
-        if not isinstance(changes,dict):
-            raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
-        if not isinstance(bitsize, int):
-            raise TypeError("specified bitsize is not type `int`")
+
+        if not isinstance(changes,dict): raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
+        if not isinstance(bitsize, (bytes | bytearray)): raise TypeError("specified bitsize is not type `int`")
         if bitsize % 8 or not bitsize or bitsize > c_ulong(-1).value.bit_length(): raise ScopeError("specified bitsize impossible")
-        self.instances = []
+
+
+        try:
+            count, changes,patch = 0, {}, patch[5:-3]
+            while count != len(patch):
+                count += 8
+                if patch[count - 5] > 0 or patch[count - 4] > 0:
+                    size = int(patch[count - 5:count - 3].hex(),16)
+                    changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
+                    count += size - 3
+                else:  #Handle RLE, only if NON-RLE is not met     
+                    changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]) 
+
+
+        except AttributeError as invalidData: pass
+        except IndexError as brokenIPS: pass 
+
+        self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
         self.bitsize = bitsize
-        
-        for offset in changes: self.instances.append(self,self.instance(self,offset=offset,data=changes[offset]))
+       
 
     def get_instance(self, specifier : str | int | instance) -> object | None: 
         hold = self.get_instances(specifier)
@@ -202,7 +208,7 @@ class ips:
         :raises TypeError: if end is not integral
         """
         return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end) 
-    def insert(self, new : instance, override : bool = False, sustain : bool = True):
+    def insert(self, offset : int, data : tuple | bytes | bytearray, name : str = None, override : bool = False, sustain : bool = True):
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
         """
         Insert an instance into an ips object.
@@ -211,8 +217,10 @@ class ips:
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
         """
         
-        if not isinstance(new, self.instance): raise TypeError("provided instance is not instance")
-        if not isinstance(override, bool): raise TypeError("provided override flag is not of type Bool") 
+        if not isinstance(offset,int): raise TypeError() 
+        if not isinstance(name, str) and not name is None: raise TypeError()
+        if not isinstance(data,(tuple, bytes, bytearray)): raise TypeError()
+        new = self.instance(offset, data,f"Unnamed patch at {offset}" if name is None else name)
 
         lowercheck = tuple(self.in_range(end = new.offset)) 
         if len(lowercheck):
