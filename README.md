@@ -23,6 +23,7 @@ Or can be installed with:
 |RUP|[`ipsluna.rup`]()|Not yet|None|None|None
 |NPS|[`ipsluna.nps`]()|Not yet|None|None|None
 |Luna|[`ipsluna.luna`]()|Not yet|None|None|None
+
 Using `import ipsluna` will install all packages with the `importlib` module. `ipsluna` provides no context abundant methods and relies on the package being specified.
 
 `Luna` serialized class handling may be implemented at a later point in time once enough of the crucial patch filetypes have been completed.
