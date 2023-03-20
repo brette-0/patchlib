@@ -19,7 +19,7 @@ Or can be installed with:
 |Xdelta|[`ipsluna.xdelta`]()|Not yet|None|None|None
 |PPF|[`ipsluna.ppf`]()|Not yet|None|None|None
 |UPS|[`ipsluna.ups`]()|Not yet|None|None|None
-|APS|[`ipsluna.ips`]()|Not yet|None|None|None
+|APS|[`ipsluna.aps`]()|Not yet|None|None|None
 |RUP|[`ipsluna.rup`]()|Not yet|None|None|None
 |NPS|[`ipsluna.nps`]()|Not yet|None|None|None
 |Luna|[`ipsluna.luna`]()|Not yet|None|None|None
