@@ -1,4 +1,3 @@
-from ctypes import c_ulong
 class OffsetError(Exception):
     """
     Raised when attepting to perform an illegal operation due to offset clashing
@@ -32,15 +31,16 @@ class ips:
             :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
             """
             if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")
-            if len(data) != 2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
+            if not len(data) is 2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
             if not isinstance(offset, int): raise TypeError("Offset is not integral!")
             if offset > min(0xFFFFFF, (2**super().bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
-            if not isinstance(name, str) and name is not None: raise TypeError("Given name is not of type string and is therefore unsuitable")
+            if name is None: self.name = f"Unamed patch at {offset}"
+            elif isinstance(name, str): self.name = name 
+            else: raise TypeError("Given name is not of type string and is therefore unsuitable")
             self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
             self.size = data[1] if self.rle else len(data)
             self.end = self.offset + self.size
-            self.name = name if name is not None else f"Unnamed patch at {offset}"
 
             
         def give_name(self,name : str):
@@ -52,86 +52,28 @@ class ips:
             if not isinstance(name, str):
                 raise TypeError("Given name is not of type String!")
             self.name = name
-        def noRLE(self):
-            """
-            Converts instance of RLE to noRLE
-            """
-            if self.rle:
-                self.rle = False
-                self.data = tuple(self.data[1]*self.data[0])
-            self.end = self.offset + self.size
-        def RLE(self):
-            if not self.rle:
-                temp = bytes([self.data[1]])*self.size 
-                if self.data == temp: self.data = self.data[1],self.size
-                else: raise ScopeError("Cannot convert non-repeating data into RLE")
 
 
-        def iwrapper(give) -> object:
-            def wrap(self, data : bytes | bytearray | int, override : int = False, sustain : bool = True):
-                if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("`data` must be type `bytes`, `bytearray`, or `tuple`.") 
-                if not isinstance(override,bool): raise TypeError("`override` must be type `bool`")
-                if not isinstance(sustain,bool): raise TypeError("`sustain` must be type `bool`")
-                end = self.offset + (data[0] if isinstance(data,tuple) else len(data))
-                if end > min(0xFFFF,(2**super().bitsize)-1): raise ScopeError("`data` writes beyond scope") 
-                if self.end == self.offset: 
-                    if isinstance(data, tuple): print("Wriring Zero data will increase the Filesize, Complexity and occupy an offset")
-                    else: raise ScopeError("noRLE data cannot have length of zero")
-                    clashes = super().in_range(self.offset,end)
-                if len(clashes):
-                    if override: 
-                        for ins in clashes: super().remove(ins)
-                    else: raise ScopeError("instance `data` exceeds scope of parent")
-                give(self,data,override,sustain)
-            return wrap
+        def modify(self, offset : int = None, data : bytes | bytearray | tuple = None, name : str = None, override : bool = False, sustain : bool = True):
+            jobs = [attr for attr in ["offset", "data", "name"] if not eval(attr) is None]  #gather a list of all modification
+            if not len(jobs): raise Exception("No jobs given :/")               #if there is nothing to do then raise exception
 
-        @iwrapper
-        def give_RLE(self,data : tuple,override : int = False, sustain : bool = True) -> tuple:
-            """
-            Gives immediate RLE instance to specified instance.
-            :param byte: The byte to be looped in RLE
-            :param int length: The run length for the byte.
-            :type byte: bytes or bytearray
-            :return: tuple by (byte,offset)
-            :rtype: tuple
-            :raises TypeError: if byte is not of type `bytes` or `bytearray`
-            :raises TypeError: if length is not integral
-            :raises ScopeError: if length is over 0xFF or less than zero.
-            :raises ScopeError: if length of `byte` is does not equal one.
-            """
-            if not isinstance(data[1],tuple):
-                raise TypeError(f"Type Error : {data[1]} is not a tuple object.")
-            if not isinstance(data[0], int):
-                raise TypeError(f"Type Error : {data[0]} is not integer")
-            if data[0] > min(0xFFFF, (2**super().bitsize)-1) or data[0] < 0:
-                raise ScopeError(f"RLE Error : {data[0]} is either above 255 and therefore too large, or smaller than zero and therefore impossible!")
-            if len(data[1]) != 1:
-                raise ScopeError(f"RLE ERROR : {data[1]} is either too long or zero length, please ensure that this is a singular byte!")
-            if not data[0]:
-                print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
-            self.rle = True 
-            self.data = data
-            self.end = self.offset + self.size
-            return self.data
+            if self.name != name and not name is None:                              #if attempting re-name
+                if isinstance(name,str): self.name = name                           #if legal, perform
+                else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError
 
-        @iwrapper
-        def give_noRLE(self,data : bytes | bytearray,override : int = False, sustain : bool = True) -> bytes:
-            """
-            Gives immediate noRLE instance to specified instance.
-            :param data: The byte to be looped in RLE
-            :type data: bytes or bytearray
-            :return: bytearray of data
-            :rtype: bytearray
-            :raises TypeError: if data is not of type `bytes` or `bytearray`
-            :raises ScopeError: if length of data is over 0xFFFF or less than zero.
-            """
-            if not isinstance(data,(bytes,bytearray)): raise TypeError(f"Given data is not bytes or bytearray type!")
-            if len(data) > min(0xFFFF, (2**super().bitsize)-1) or len(data) < 0: raise ScopeError(f"Given data is either above 65535 and therefore too large, or smaller than zero and therefore impossible!")
-            if len(data) == 0: print("Warning : Zero Length data has been wrote, this will not write anything and may break some IPS patchers.")
-            self.rle = False
-            self.data = data
-            self.size = len(self.data)
-            self.end = self.offset + self.size
+            for resolve in jobs:                                                    #of all jobs to do
+                if eval(resolve) is None: eval(f"{resolve} = self.{resolve}")       #define locals by equal attributes
+
+            clashes = super().in_range(end=offset)[0],super().in_range(offset, offset+(data[1] if isinstance(data,tuple) else len(data))) 
+            #retrieve all instances of the parent class from the start of the offset to the end
+            if len(clashes):    #if not zero-length
+                if override:    #if override flag set
+                    for ins in clashes:super().remove(ins)  #for each instance in parent, remove
+                else: raise ScopeError("Space is already occupied by other instances")  #otherwise raise ScopeError due to impossible task
+            self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
+            self.rle = isinstance(self.data,tuple)
+            #could we just do self.__init__(self, offset, data, name)?         
 
         def give(self, data : tuple | bytes | bytearray,override : int = False, sustain : bool = True) -> tuple | bytearray: 
             """
@@ -158,7 +100,7 @@ class ips:
 
         if not isinstance(changes,dict): raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
         if not isinstance(bitsize, (bytes | bytearray)): raise TypeError("specified bitsize is not type `int`")
-        if bitsize % 8 or not bitsize or bitsize > c_ulong(-1).value.bit_length(): raise ScopeError("specified bitsize impossible")
+        if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
 
 
         try:
@@ -270,7 +212,7 @@ class ips:
         elif isinstance(instances,self.instance): self.instances.remove(instances)
         else: raise TypeError("given patch is not an instance.")
         return instances   
-    def move(self, Instance : instance, offset : int,override : bool = False):
+    def move(self, Instance : instance | str | int, offset : int,override : bool = False):
         if isinstance(Instance,(str,int)):
             Instance = self.get_instances(Instance) 
             if len(Instance): 
