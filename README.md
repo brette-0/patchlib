@@ -7,21 +7,22 @@ Or can be installed with:
 |--|--|
 |`pip install ipsluna`  | `pip3 install ipsluna` |
  - *Intended for Python 3.7 and above*
- - Uses [Importlib](https://docs.python.org/3/library/importlib.html) for complete importing
+ - Uses [`ctypes`](https://docs.python.org/3/library/ctypes.html) for unsigned upperlimit retrieval
+ - Uses [`Importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
  - Currently can only use `ips` files.
  
 
-|Name | package |Docs| Version| Module-Size | Source |
+|Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
-|IPS|ipsluna.ips| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/ipsluna.ips_docs.md) |0.9|18.5 KB |[IPS](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py) |
-|BPS|ipsluna.bps|Not yet|alpha|5.85 KB|None
-|Xdelta|ipsluna.xdelta|Not yet|None|None|None
-|PPF|ipsluna.ppf|Not yet|None|None|None
-|UPS|ipsluna.ups|Not yet|None|None|None
-|APS|ipsluna.ips|Not yet|None|None|None
-|RUP|ipsluna.rup|Not yet|None|None|None
-|NPS|ipsluna.nps|Not yet|None|None|None
-|Luna|ipsluna.luna|Not yet|None|None|None
+|IPS|[`ipsluna.ips`](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py)| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) |0.9|21.2 KB |None |
+|BPS|[`ipsluna.bps`]()|Not yet|alpha|5.85 KB|None
+|Xdelta|[`ipsluna.xdelta`]()|Not yet|None|None|None
+|PPF|[`ipsluna.ppf`]()|Not yet|None|None|None
+|UPS|[`ipsluna.ups`]()|Not yet|None|None|None
+|APS|[`ipsluna.aps`]()|Not yet|None|None|None
+|RUP|[`ipsluna.rup`]()|Not yet|None|None|None
+|NPS|[`ipsluna.nps`]()|Not yet|None|None|None
+|Luna|[`ipsluna.luna`]()|Not yet|None|None|None
 
 Using `import ipsluna` will install all packages with the `importlib` module. `ipsluna` provides no context abundant methods and relies on the package being specified.
 
