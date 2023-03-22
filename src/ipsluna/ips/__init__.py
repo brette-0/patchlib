@@ -42,17 +42,6 @@ class ips:
             self.size = data[1] if self.rle else len(data)
             self.end = self.offset + self.size
 
-            
-        def give_name(self,name : str):
-            """
-            Allows the user to provide the instance a specified name
-            :type str name: The name to give to the instance
-            :raises TypeError: if name is not string
-            """
-            if not isinstance(name, str):
-                raise TypeError("Given name is not of type String!")
-            self.name = name
-
 
         def modify(self, offset : int = None, data : bytes | bytearray | tuple = None, name : str = None, override : bool = False, sustain : bool = True):
             jobs = [attr for attr in ["offset", "data", "name"] if not eval(attr) is None]  #gather a list of all modification
@@ -73,24 +62,14 @@ class ips:
                 else: raise ScopeError("Space is already occupied by other instances")  #otherwise raise ScopeError due to impossible task
             self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
             self.rle = isinstance(self.data,tuple)
-            #could we just do self.__init__(self, offset, data, name)?         
+            #could we just do self.__init__(self, offset, data, name)?      
+             
+            super().instances.remove(self)                                                      #remove
+            temp = super().instances.index(super().in_range(self.offset)[0])                    #from start = self.offset, end = (2**super().bitsize)-1 DEF
+            super().instances.insert(temp,self)                                                 #update
 
-        def give(self, data : tuple | bytes | bytearray,override : int = False, sustain : bool = True) -> tuple | bytearray: 
-            """
-            nospecific data modifier used for human interaction or unkown instance type
-            :param data: The data to insert into the instance
-            :type data: bytes or bytearray or tuple
-            :return: bytearray or tuple of data
-            :rtype: tuple or bytearray
-            :raises TypeError: if data is not of type `bytes` or `bytearray`
-            :raises ScopeError: if length of data is over 0xFFFF or less than zero.
-            """
-            if isinstance(data,tuple): return self.give_RLE(data, override, sustain) 
-            if not isinstance(data,(bytes,bytearray)): return self.give_noRLE(data, override, sustain)
-            raise TypeError("Unexpected type for data!")
-        """
-        class supporting intimate interactions with the normalized ips data.
-        """
+            #If offset has been modified, we need to retrieve the super().instances index of the upper consecutive offset. We use in_range?
+            #instance needs to chronologicaly tranpose as well as mathamatically.
 
     def __init__(self, patch : bytes | bytearray, bitsize : int = 24):
         """
@@ -150,7 +129,18 @@ class ips:
         :raises TypeError: if end is not integral
         """
         return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end) 
-    def insert(self, offset : int, data : tuple | bytes | bytearray, name : str = None, override : bool = False, sustain : bool = True):
+    def create(self, offset : int, data : tuple | bytes | bytearray, name : str = None, override : bool = False, sustain : bool = True):
+        self.instances.append(self.instance(offset, data, name))
+        try:
+            self.instances[-1].modify(offset, data, name,override, sustain) 
+            #code to insert at new offset
+        except: 
+            self.instances[-1].destroy()
+            try: self.instances.pop(-1) 
+            except IndexError: pass
+
+        #temporary data must be IMMEDIATLY ascribed to instance, position is arbitrary as it is immediatly
+
         #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
         """
         Insert an instance into an ips object.
@@ -159,46 +149,7 @@ class ips:
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
         """
         
-        if not isinstance(offset,int): raise TypeError() 
-        if not isinstance(name, str) and not name is None: raise TypeError()
-        if not isinstance(data,(tuple, bytes, bytearray)): raise TypeError()
-        new = self.instance(offset, data,f"Unnamed patch at {offset}" if name is None else name)
-
-        lowercheck = tuple(self.in_range(end = new.offset)) 
-        if len(lowercheck):
-            lowercheck = lowercheck[-1] 
-            if lowercheck.end > new.offset:
-                if override:
-                    if sustain:
-                        if lowercheck.rle:
-                            lowercheck.give_RLE(lowercheck[0],new.offset-lowercheck.end)
-                        else: 
-                            lowercheck.give_noRLE(lowercheck.data[lowercheck.offset-new.end:])
-                    else: 
-                        self.remove(lowercheck)  
-                else:
-                    raise OffsetError(f"{lowercheck.name} write into areas occupied by {new.name}") 
-        uppercheck = tuple(self.in_range(new.offset, new.end)) 
-        if len(uppercheck):
-            if override:
-                for ins in uppercheck: self.remove(ins) 
-                uppercheck = uppercheck[-1] 
-                if sustain: 
-                    if uppercheck.rle:
-                        uppercheck.give_RLE(uppercheck.data[1],uppercheck.offset-new.end)
-                    else: 
-                        uppercheck.give_noRLE(uppercheck.data[uppercheck.offset-new.end:])
-                    self.move(uppercheck,new.end)
-                else: self.remove(uppercheck)  
-            else: raise OffsetError(f"{new.name} writes into areas between {uppercheck[0].offset} and {uppercheck[-1].end}")
-
-
-        uppercheck = tuple(self.in_range(new.end,0xFFFFFF+0xFFFF if self.bitsize >= 32 else (2**self.bitsize)-1))
-        if len(uppercheck):
-            uppercheck = self.instances.index(uppercheck[0]) 
-        else:
-            uppercheck = -1
-        self.instances.insert(uppercheck,new)    
+        pass #Implement later 
     def remove(self, instances : instance | str | int) -> instance | tuple:
         """
         Used to remove an instance from an ips class
@@ -212,23 +163,7 @@ class ips:
         elif isinstance(instances,self.instance): self.instances.remove(instances)
         else: raise TypeError("given patch is not an instance.")
         return instances   
-    def move(self, Instance : instance | str | int, offset : int,override : bool = False):
-        if isinstance(Instance,(str,int)):
-            Instance = self.get_instances(Instance) 
-            if len(Instance): 
-                Instance = Instance[0] 
-            else: raise IndexError("No Instance exists by discriminator provided")
-        if not isinstance(Instance,self.instance):
-            raise Exception(f"Type Error : {Instance} is not an instance or instance name/offset.")
-        if Instance not in self.instances:
-            raise Exception(f"Key Error : {Instance} is not an instance in this class")
-        if offset > (2**self.bitsize)-1 or offset < 0:
-            raise Exception(f"Number Error : {offset} is either over {0xFFFF + 0xFFFF if self.bitsize >= 32 else (2**self.bitsize)-1} or smaller than zero which is impossible!")
-        self.remove(Instance)
-        try:
-            self.insert(self.instance(offset,Instance.data,Instance.name),override)
-        except OffsetError:
-            self.insert(Instance)
+    
     
         
 
