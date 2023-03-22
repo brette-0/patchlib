@@ -44,20 +44,25 @@ class ips:
 
 
         def modify(self, offset : int = None, data : bytes | bytearray | tuple = None, name : str = None, override : bool = False, sustain : bool = True):
-            jobs = [attr for attr in ["offset", "data", "name"] if not eval(attr) is None]  #gather a list of all modification
-            if not len(jobs): raise Exception("No jobs given :/")               #if there is nothing to do then raise exception
 
             if self.name != name and not name is None:                              #if attempting re-name
                 if isinstance(name,str): self.name = name                           #if legal, perform
                 else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError
 
-            for resolve in jobs:                                                    #of all jobs to do
+            for resolve in ["offset", "data", "name"]:                                                    #of all jobs to do
                 if eval(resolve) is None: eval(f"{resolve} = self.{resolve}")       #define locals by equal attributes
 
-            clashes = super().in_range(end=offset)[0],super().in_range(offset, offset+(data[1] if isinstance(data,tuple) else len(data))) 
+            clashes = super().in_range(super().in_range(end=offset)[-1].end, offset+(data[1] if isinstance(data,tuple) else len(data))) 
             #retrieve all instances of the parent class from the start of the offset to the end
             if len(clashes):    #if not zero-length
                 if override:    #if override flag set
+                    if sustain:
+                        clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
+                        rle = isinstance(data,tuple)
+                        size = (data[1] if rle else len(data))
+
+                        clashes[-1].modify(offset = offset + size, data = (clashes[-1].data,clashes.end - offset) if rle else clashes[-1].data[clashes.end-offset:])
+                        clashes.pop(0);clashes.pop(-1)
                     for ins in clashes:super().remove(ins)  #for each instance in parent, remove
                 else: raise ScopeError("Space is already occupied by other instances")  #otherwise raise ScopeError due to impossible task
             self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
