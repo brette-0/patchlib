@@ -19,6 +19,15 @@ class ips:
         """
         Task stored in ips file storing data for modification. 
         """
+        def __del__(self): 
+
+            """
+            Needed to maintain functionality throughout the rest of the code
+
+            """
+            if self in self.parent.instances:
+                self.parent.remove(self)
+
         def __init__(self, parent, offset : int,data : bytes | bytearray | tuple,name : str = None):
             """
             IPS instance initialization 
@@ -54,12 +63,12 @@ class ips:
             *override = overriding existing data
             *sustain  = whilst overriding, attempt to maintain as much mod data as possible
             """
-            valid_args = {"offset", "data", "name", "override", "sustain"}
+            valid_args = {"offset", "data", "name", "override", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
 
-            defaults = {"override": False, "sustain": True}
+            defaults = {"override": False, "sustain": True, "merge" : False}
             offset = kwargs.get("offset", self.offset)
             data = kwargs.get("data", self.data)
             name = kwargs.get("name", self.name)
@@ -70,31 +79,65 @@ class ips:
             override = kwargs.get("override", defaults["override"])
             sustain = kwargs.get("sustain", defaults["sustain"])
 
-
+            #
+            is_first = self is self.parent.instances[0] 
+            is_last = self is self.parent.instances[-1]
            
-            clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end, offset+(data[1] if isinstance(data,tuple) else len(data))) 
-            #retrieve all instances of the parent class from the start of the offset to the end
-            if len(clashes):    #if not zero-length
-                if override:    #if override flag set
-                    if sustain:
-                        clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
-                        rle = isinstance(data,tuple)
-                        size = (data[1] if rle else len(data))
 
-                        clashes[-1].modify(offset = offset + size, data = (clashes[-1].data,clashes.end - offset) if rle else clashes[-1].data[clashes.end-offset:])
+            """
+
+            When creating the clashes list, we need to read from the end of the last patch to ensure no overlap, however if in the event that we find nothing
+            we also want to minimize list generation time, which means a smaller sample size in this case. 
+            We can circumvent wasted time by setting the start to the start of the target patch, this is due to the possible existence of patches beyond 
+            the offset.
+
+            The end arg is set by the temporary end local, which is used to describe the final byte the instance WOULD write up to
+            """
+
+
+
+            end = offset+(data[1] if isinstance(data,tuple) else len(data))
+            clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end if is_first else offset, end) 
+
+
+            #Granted that we were sucessful in retrieving pre-existing data in between the target offsets
+            if len(clashes):    
+
+                #And that we have the flag set, which is not set by default, to override existing data
+                if override:   
+
+                    #Then check if the sustain flag is set, which attempts to maintain as much data as possible and is enabled by default
+                    if sustain:
+
+                        #Modify first clash such that the data is trimmed to that it does not write into the offset
+                        clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
+
+                        #gather bools for final modification
+                        finaldata = clashes[-1].data,clashes.end - offset if isinstance(clashes[-1].data,tuple) else clashes[-1].data[clashes[-1].end-offset:]
+
+                        #Offset is changed such that it writes following the ending byte
+                        clashes[-1].modify(offset = end, data = finaldata)
+
+                        #remove from clashes, does not destroy objects - simply excludes them from later removal
                         clashes.pop(0);clashes.pop(-1)
+
+                    #This process will exclude every instance still recognized as a clash, and remove from memory
                     for ins in clashes:self.parent.remove(ins)  #for each instance in parent, remove
-                else: raise ScopeError("Space is already occupied by other instances")  #otherwise raise ScopeError due to impossible task
+
+                #Else if we are not overwriting then we have encountered a clash, raise
+                else: raise OffsetError("Space is already occupied by other instances") 
+
+            #redfine attributes based on new data
             self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
             self.rle = isinstance(self.data,tuple)
             #could we just do self.__init__(self, offset, data, name)?     
-            #
-            if self.name != name and not name is None:                              #if attempting re-name
+            
+            if name not in (self.name, None):                              #if attempting re-name
                 if isinstance(name,str): self.name = name                           #if legal, perform
                 else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError 
              
             self.parent.instances.remove(self)                                                      #remove
-            temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                    #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
+            temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
             self.parent.instances.insert(temp,self)                                                 #update
 
             #If offset has been modified, we need to retrieve the self.parent.instances index of the upper consecutive offset. We use in_range?
@@ -189,7 +232,7 @@ class ips:
         :raises KeyError: if patch is not present in ips
         """
         if isinstance(instances,(str,int)):
-            for ins in tuple(self.get_instances(instances)): self.remove(ins)
+            for ins in tuple(self.get_instances(instances)): self.remove(ins); del ins
         elif isinstance(instances,self.instance): self.instances.remove(instances)
         else: raise TypeError("given patch is not an instance.")
         return instances   
@@ -381,3 +424,19 @@ def make(base : bytes | bytearray, modded : bytes | bytearray, bitsize : int = 2
 
   #Code is still faulty
   #True overwrite will require upperlimit to be modified to recurse until final patch can be assured to exist oustide of jurisdicution of overriding patch
+
+"""
+  If an ips leads DIRECTLY into another IPS, and an IPS follows into another IPS all by offset. - They can all be on ips "merge = True"
+  Setup Custom Exceptions correctly
+  
+  potentially store internal names, who knows
+  revise ips "patch" arg types
+
+  revise potentially useless methods, but still provide total control
+
+
+  merge will accept noRLE's always
+  if set to None, it will merge noRLE but maintain RLE always
+  if merge is False it will never merge
+  if merge is True it will ALWAYS merge
+"""
