@@ -15,11 +15,11 @@ class ScopeError(Exception):
         
 
 class ips:
-    class instance:
+    class instance():
         """
         Task stored in ips file storing data for modification. 
         """
-        def __init__(self, offset : int,data : bytes | bytearray | tuple,name : str = None):
+        def __init__(self, parent, offset : int,data : bytes | bytearray | tuple,name : str = None):
             """
             IPS instance initialization 
             :param int offset: Offset for where the patcher will write to
@@ -30,18 +30,20 @@ class ips:
             :raises TypeError: if name is not string or None
             :raises ScopeError: if offset is above 0xFFFFFF or smaller than zero.
             """
+            
             if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")
-            if not len(data) is 2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
+            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
             if not isinstance(offset, int): raise TypeError("Offset is not integral!")
-            if offset > min(0xFFFFFF, (2**super().bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > min(0xFFFFFF, (2**parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
             if name is None: self.name = f"Unamed patch at {offset}"
             elif isinstance(name, str): self.name = name 
             else: raise TypeError("Given name is not of type string and is therefore unsuitable")
             self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
-            self.size = data[1] if self.rle else len(data)
+            self.size = data[0] if self.rle else len(data)
             self.end = self.offset + self.size
 
+            self.parent = parent
 
         def modify(self, **kwargs):
             """
@@ -70,7 +72,7 @@ class ips:
 
 
            
-            clashes = super().in_range(super().in_range(end=offset)[-1].end, offset+(data[1] if isinstance(data,tuple) else len(data))) 
+            clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end, offset+(data[1] if isinstance(data,tuple) else len(data))) 
             #retrieve all instances of the parent class from the start of the offset to the end
             if len(clashes):    #if not zero-length
                 if override:    #if override flag set
@@ -81,7 +83,7 @@ class ips:
 
                         clashes[-1].modify(offset = offset + size, data = (clashes[-1].data,clashes.end - offset) if rle else clashes[-1].data[clashes.end-offset:])
                         clashes.pop(0);clashes.pop(-1)
-                    for ins in clashes:super().remove(ins)  #for each instance in parent, remove
+                    for ins in clashes:self.parent.remove(ins)  #for each instance in parent, remove
                 else: raise ScopeError("Space is already occupied by other instances")  #otherwise raise ScopeError due to impossible task
             self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
             self.rle = isinstance(self.data,tuple)
@@ -91,11 +93,11 @@ class ips:
                 if isinstance(name,str): self.name = name                           #if legal, perform
                 else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError 
              
-            super().instances.remove(self)                                                      #remove
-            temp = super().instances.index(super().in_range(self.offset)[0])                    #from start = self.offset, end = (2**super().bitsize)-1 DEF
-            super().instances.insert(temp,self)                                                 #update
+            self.parent.instances.remove(self)                                                      #remove
+            temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                    #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
+            self.parent.instances.insert(temp,self)                                                 #update
 
-            #If offset has been modified, we need to retrieve the super().instances index of the upper consecutive offset. We use in_range?
+            #If offset has been modified, we need to retrieve the self.parent.instances index of the upper consecutive offset. We use in_range?
             #instance needs to chronologicaly tranpose as well as mathamatically.
 
     def __init__(self, patch : bytes | bytearray, bitsize : int = 24):
@@ -104,8 +106,8 @@ class ips:
         :raises TypeError: if normalized is not type `dict`
         """
 
-        if not isinstance(changes,dict): raise TypeError("normalized is not type `dict` and therefore cannot be accessed")
-        if not isinstance(bitsize, (bytes | bytearray)): raise TypeError("specified bitsize is not type `int`")
+        if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
+        if not isinstance(bitsize, int): raise TypeError("specified bitsize is not type `int`")
         if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
 
 
@@ -124,8 +126,9 @@ class ips:
         except AttributeError as invalidData: pass
         except IndexError as brokenIPS: pass 
 
-        self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
         self.bitsize = bitsize
+        self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
+        
        
 
     def get_instance(self, specifier : str | int | instance) -> object | None: 
@@ -338,8 +341,7 @@ def make(base : bytes | bytearray, modded : bytes | bytearray, bitsize : int = 2
 				    
 
 
-				#split data every 16 bit upperlimit 
-				#pass #!!!!! Important
+				
 
 				
 				
@@ -363,10 +365,15 @@ def make(base : bytes | bytearray, modded : bytes | bytearray, bitsize : int = 2
             else:
                 while not bytes([modded[count]])*5 is count[count:count+5]:
                     data += 1
-				#split data every 16 bit upperlimit 
-                pass #!!!!! Important
 
-		#are we needing to write a length diff
+                data = data // 0xFFFF, data % 0xFFFF
+
+                for split in range(data[0]):
+                    ipsf += count.to_bytes(3, "big")+b"\xff\xff"+modded[count:count+0xFFFF] 
+                    count += 0xFFFF 
+                ipsf += count.to_bytes(3, "big")+data[1].to_bytes(2,"big")+modded[count:count+data[1]] 
+                count += data[1]
+
         if count is len(modded)-1:
             ipsf += count.to_bytes(3,"big")+b"\x00\x00\x00\x01\x00"
     return ips(ipsf)	
