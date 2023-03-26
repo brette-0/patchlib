@@ -100,8 +100,8 @@ class ips:
             if (offset, data) != (self.offset, self.data):
 
                 end = offset+(data[1] if isinstance(data,tuple) else len(data))
-                clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end if is_first else offset, end) 
-
+                clashes = list(self.parent.in_range(offset if is_first else self.parent.in_range(end=offset)[-1].end, end))
+                if self in clashes: clashes.remove(self)
 
                 #Granted that we were sucessful in retrieving pre-existing data in between the target offsets
                 if len(clashes):    
