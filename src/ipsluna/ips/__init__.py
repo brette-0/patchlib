@@ -19,6 +19,9 @@ class ips:
         """
         Task stored in ips file storing data for modification. 
         """
+
+        def __str__(self): 
+            return 'ips(b"PATCHEOF").create(self, offset = '+f"{self.offset}, data = {self.data}" + (")" if self.name != f"Unamed patch at {self.offset}" else f",name = {self.name})")
         def __del__(self): 
 
             """
@@ -27,7 +30,7 @@ class ips:
             """
             if self in self.parent.instances:
                 self.parent.remove(self)
-
+        
         def __init__(self, parent, offset : int,data : bytes | bytearray | tuple,name : str = None):
             """
             IPS instance initialization 
@@ -94,56 +97,57 @@ class ips:
             The end arg is set by the temporary end local, which is used to describe the final byte the instance WOULD write up to
             """
 
+            if (offset, data) != (self.offset, self.data):
+
+                end = offset+(data[1] if isinstance(data,tuple) else len(data))
+                clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end if is_first else offset, end) 
 
 
-            end = offset+(data[1] if isinstance(data,tuple) else len(data))
-            clashes = self.parent.in_range(self.parent.in_range(end=offset)[-1].end if is_first else offset, end) 
+                #Granted that we were sucessful in retrieving pre-existing data in between the target offsets
+                if len(clashes):    
 
+                    #And that we have the flag set, which is not set by default, to override existing data
+                    if override:   
 
-            #Granted that we were sucessful in retrieving pre-existing data in between the target offsets
-            if len(clashes):    
+                        #Then check if the sustain flag is set, which attempts to maintain as much data as possible and is enabled by default
+                        if sustain:
 
-                #And that we have the flag set, which is not set by default, to override existing data
-                if override:   
+                            #Modify first clash such that the data is trimmed to that it does not write into the offset
+                            clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
 
-                    #Then check if the sustain flag is set, which attempts to maintain as much data as possible and is enabled by default
-                    if sustain:
+                            #gather bools for final modification
+                            finaldata = clashes[-1].data,clashes.end - offset if isinstance(clashes[-1].data,tuple) else clashes[-1].data[clashes[-1].end-offset:]
 
-                        #Modify first clash such that the data is trimmed to that it does not write into the offset
-                        clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
+                            #Offset is changed such that it writes following the ending byte
+                            clashes[-1].modify(offset = end, data = finaldata)
 
-                        #gather bools for final modification
-                        finaldata = clashes[-1].data,clashes.end - offset if isinstance(clashes[-1].data,tuple) else clashes[-1].data[clashes[-1].end-offset:]
+                            #remove from clashes, does not destroy objects - simply excludes them from later removal
+                            clashes.pop(0);clashes.pop(-1)
 
-                        #Offset is changed such that it writes following the ending byte
-                        clashes[-1].modify(offset = end, data = finaldata)
+                        #This process will exclude every instance still recognized as a clash, and remove from memory
+                        for ins in clashes:self.parent.remove(ins)  #for each instance in parent, remove
 
-                        #remove from clashes, does not destroy objects - simply excludes them from later removal
-                        clashes.pop(0);clashes.pop(-1)
+                    #Else if we are not overwriting then we have encountered a clash, raise
+                    else: raise OffsetError("Space is already occupied by other instances") 
 
-                    #This process will exclude every instance still recognized as a clash, and remove from memory
-                    for ins in clashes:self.parent.remove(ins)  #for each instance in parent, remove
-
-                #Else if we are not overwriting then we have encountered a clash, raise
-                else: raise OffsetError("Space is already occupied by other instances") 
-
-            #redfine attributes based on new data
-            self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
-            self.rle = isinstance(self.data,tuple)
-            #could we just do self.__init__(self, offset, data, name)?     
+                #redfine attributes based on new data
+                self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
+                self.rle = isinstance(self.data,tuple)
+                #could we just do self.__init__(self, offset, data, name)?   
+                self.parent.instances.remove(self)                                                      #remove
+                temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
+                self.parent.instances.insert(temp,self)                                                 #update  
             
             if name not in (self.name, None):                              #if attempting re-name
                 if isinstance(name,str): self.name = name                           #if legal, perform
                 else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError 
              
-            self.parent.instances.remove(self)                                                      #remove
-            temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
-            self.parent.instances.insert(temp,self)                                                 #update
+            
 
             #If offset has been modified, we need to retrieve the self.parent.instances index of the upper consecutive offset. We use in_range?
             #instance needs to chronologicaly tranpose as well as mathamatically.
 
-    def __init__(self, patch : bytes | bytearray, bitsize : int = 24):
+    def __init__(self, patch : bytes | bytearray = b"PATCHEOF", bitsize : int = 24):
         """
         initialization maps out all instances in normalized dictionary into `instances`
         :raises TypeError: if normalized is not type `dict`
@@ -152,7 +156,6 @@ class ips:
         if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
         if not isinstance(bitsize, int): raise TypeError("specified bitsize is not type `int`")
         if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
-
 
         try:
             count, changes,patch = 0, {}, patch[5:-3]
@@ -166,13 +169,17 @@ class ips:
                     changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]) 
 
 
-        except AttributeError as invalidData: pass
-        except IndexError as brokenIPS: pass 
+        except IndexError as InvalidIPS: 
+            raise Exception(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS   #!!!! FIX LATER, VERY BAD
 
         self.bitsize = bitsize
         self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
         
-       
+    def __iter__(self):
+        return iter(self.instances)
+
+    def __str__(self):
+        return f'ips(patch = b"PATCHEOF", bitsize = 24)'
 
     def get_instance(self, specifier : str | int | instance) -> object | None: 
         hold = self.get_instances(specifier)
