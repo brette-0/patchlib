@@ -66,12 +66,12 @@ class ips:
             *override = overriding existing data
             *sustain  = whilst overriding, attempt to maintain as much mod data as possible
             """
-            valid_args = {"offset", "data", "name", "override", "sustain", "merge"}
+            valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
 
-            defaults = {"override": False, "sustain": True, "merge" : False}
+            defaults = {"overwrite": False, "sustain": True, "merge" : False}
             offset = kwargs.get("offset", self.offset)
             data = kwargs.get("data", self.data)
             name = kwargs.get("name", self.name)
@@ -79,7 +79,16 @@ class ips:
             if name is None:  
                 name = f"Unnamed instance at : {offset}"
 
-            override = kwargs.get("override", defaults["override"])
+            if not isinstance(offset, int): raise TypeError("Offset must be integer")
+            if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
+            if not isinstance(name, str): raise TypeError("name must be string") 
+
+            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
+            if offset > min(0xFFFFFF, (2**self.parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
+
+
+            overwrite = kwargs.get("overwrite", defaults["overwrite"])
             sustain = kwargs.get("sustain", defaults["sustain"])
 
             #
@@ -98,8 +107,7 @@ class ips:
             """
 
             if (offset, data) != (self.offset, self.data):
-
-                end = offset+(data[1] if isinstance(data,tuple) else len(data))
+                end = offset+(data[0] if isinstance(data,tuple) else len(data))
                 clashes = list(self.parent.in_range(offset if is_first else self.parent.in_range(end=offset)[-1].end, end))
                 if self in clashes: clashes.remove(self)
 
@@ -107,7 +115,7 @@ class ips:
                 if len(clashes):    
 
                     #And that we have the flag set, which is not set by default, to override existing data
-                    if override:   
+                    if overwrite:   
 
                         #Then check if the sustain flag is set, which attempts to maintain as much data as possible and is enabled by default
                         if sustain:
@@ -119,7 +127,7 @@ class ips:
                             finaldata = clashes[-1].data,clashes.end - offset if isinstance(clashes[-1].data,tuple) else clashes[-1].data[clashes[-1].end-offset:]
 
                             #Offset is changed such that it writes following the ending byte
-                            clashes[-1].modify(offset = end, data = finaldata)
+                            clashes[-1].modify(offset = end, data = finaldata, name = clashes[-1].name if clashes[-1].name != f"Unamed patch at {clashes[-1].offset}" else None)
 
                             #remove from clashes, does not destroy objects - simply excludes them from later removal
                             clashes.pop(0);clashes.pop(-1)
