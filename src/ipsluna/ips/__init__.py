@@ -71,7 +71,6 @@ class ips:
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
 
-            defaults = {"overwrite": False, "sustain": True, "merge" : True}
             offset = kwargs.get("offset", self.offset)
             data = kwargs.get("data", self.data)
             name = kwargs.get("name", self.name)
@@ -88,14 +87,10 @@ class ips:
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
 
 
-            overwrite = kwargs.get("overwrite", defaults["overwrite"])
-            sustain = kwargs.get("sustain", defaults["sustain"])
-            merge = kwargs.get("merge", defaults["merge"])
+            overwrite = kwargs.get("overwrite", False)
+            sustain = kwargs.get("sustain", True)
+            merge = kwargs.get("merge", False)
 
-            #
-            is_first = self is self.parent.instances[0] 
-            is_last = self is self.parent.instances[-1]
-           
 
             """
 
@@ -129,17 +124,36 @@ class ips:
 
                     if sustain: 
                         if len(clashes) == 1:  
-                            temp = clashes[0].offset, clashes[0].data, clashes[0].size, clashes[0].end, clashes[0].rle, clashes[0].name
+                            temp = clashes[0].offset, clashes[0].data[0]*clashes[0].data[1] if clashes[0].rle else len(clashes[1].data), 
+                            clashes[0].size, clashes[0].end, clashes[0].rle, clashes[0].name
                             self.parent.remove(clashes[0])
                             clashes = [] 
-                            self.parent.create(offset = temp[0], data = (offset - temp[0], temp[1][1]) if temp[4] else temp[1][:offset-temp[0]])
-                            self.parent.create(offset = end, data = (temp[3] - end, temp[1][1]) if temp[4] else temp[1][temp[3] - end:])
+                            if merge: 
+                                offset = temp[0]
+                                data = temp[1][:offset-temp[0]]+(data[0]*data[1] if isinstance(data,tuple) else data)+temp[1][temp[3]-end:]
+                                rle = False
+                                size = len(data)
+                                end = offset + size
+                            else:
+                                self.parent.create(offset = temp[0], data = temp[1][:offset-temp[0]])
+                                self.parent.create(offset = end, data = temp[1][temp[3] - end:])
                             #may add optimizations later, we are assuming the IPS was made well and therefore should be pre-optimized
 
                         else:  
                             clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset]) 
                             clashes[-1].modify(offset = end, data = (clashes[-1].end-end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[0].end-end:], name = None) 
                             #adjust for name preservation later
+                            if merge:
+                                offset = clashes[0].offset 
+                                def norle(rle):
+                                    if not isinstance(rle,tuple): return len(rle) 
+                                    return rle[0]*rle[1]
+
+                                data = norle(clashes[0].data)+norle(data)+norle(clashes[-1].data)
+                                rle = False
+                                size = len(data)
+                                end = offset + size
+
                             clashes = clashes[1:-1] #remove clashes from removal (they are not terminated)
 
 
