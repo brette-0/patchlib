@@ -71,7 +71,7 @@ class ips:
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
 
-            defaults = {"overwrite": False, "sustain": True, "merge" : False}
+            defaults = {"overwrite": False, "sustain": True, "merge" : True}
             offset = kwargs.get("offset", self.offset)
             data = kwargs.get("data", self.data)
             name = kwargs.get("name", self.name)
@@ -90,6 +90,7 @@ class ips:
 
             overwrite = kwargs.get("overwrite", defaults["overwrite"])
             sustain = kwargs.get("sustain", defaults["sustain"])
+            merge = kwargs.get("merge", defaults["merge"])
 
             #
             is_first = self is self.parent.instances[0] 
@@ -107,36 +108,43 @@ class ips:
             """
 
             if (offset, data) != (self.offset, self.data):
-                end = offset+(data[0] if isinstance(data,tuple) else len(data))
-                clashes = list(self.parent.in_range(offset if is_first else self.parent.in_range(end=offset)[-1].end, end))
-                if self in clashes: clashes.remove(self)
+                start = self.parent.in_range(end=offset)[-1].offset if self.parent.instances[0].offset < offset else offset    #include first affected instance
+                rle = isinstance(data,tuple) 
+                size = data[0] if rle else len(data)
+                end = offset + size
+
+                clashes = list(self.parent.in_range(start, end))    #create mutable of clashes
+                if self in clashes: clashes.remove(self)   #remove self if present, you should not clash with yourself (that is dangerous to your health)
 
                 #Granted that we were sucessful in retrieving pre-existing data in between the target offsets
                 if len(clashes):    
+                    if not overwrite: raise OffsetError("instance cannot be modified due to clashing data") 
 
-                    #And that we have the flag set, which is not set by default, to override existing data
-                    if overwrite:   
+                    start = self.parent.in_range(end=offset)[-1].offset    #include first affected instance
+                    rle = isinstance(data,tuple) 
+                    size = data[0] if rle else len(data)
+                    end = offset + size
 
-                        #Then check if the sustain flag is set, which attempts to maintain as much data as possible and is enabled by default
-                        if sustain:
+                    clashes = self.parent.in_range(start, end)
 
-                            #Modify first clash such that the data is trimmed to that it does not write into the offset
-                            clashes[0].modify(data = (clashes[0].data[0],offset - clashes[0].end) if clashes[0].rle else clashes[0].data[:clashes[0].end-offset])
+                    if sustain: 
+                        if len(clashes) == 1:  
+                            temp = clashes[0].offset, clashes[0].data, clashes[0].size, clashes[0].end, clashes[0].rle, clashes[0].name
+                            self.parent.remove(clashes[0])
+                            clashes = [] 
+                            self.parent.create(offset = temp[0], data = (offset - temp[0], temp[1][1]) if temp[4] else temp[1][:offset-temp[0]])
+                            self.parent.create(offset = end, data = (temp[3] - end, temp[1][1]) if temp[4] else temp[1][temp[3] - end:])
+                            #may add optimizations later, we are assuming the IPS was made well and therefore should be pre-optimized
 
-                            #gather bools for final modification
-                            finaldata = clashes[-1].data,clashes.end - offset if isinstance(clashes[-1].data,tuple) else clashes[-1].data[clashes[-1].end-offset:]
+                        else:  
+                            clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset]) 
+                            clashes[-1].modify(offset = end, data = (clashes[-1].end-end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[0].end-end:], name = None) 
+                            #adjust for name preservation later
+                            clashes = clashes[1:-1] #remove clashes from removal (they are not terminated)
 
-                            #Offset is changed such that it writes following the ending byte
-                            clashes[-1].modify(offset = end, data = finaldata, name = clashes[-1].name if clashes[-1].name != f"Unamed patch at {clashes[-1].offset}" else None)
 
-                            #remove from clashes, does not destroy objects - simply excludes them from later removal
-                            clashes.pop(0);clashes.pop(-1)
-
-                        #This process will exclude every instance still recognized as a clash, and remove from memory
-                        for ins in clashes:self.parent.remove(ins)  #for each instance in parent, remove
-
-                    #Else if we are not overwriting then we have encountered a clash, raise
-                    else: raise OffsetError("Space is already occupied by other instances") 
+                    #we are overwriting, so we will remove what is not preserved
+                    for clash in clashes: self.parent.remove(clash)
 
                 #redfine attributes based on new data
                 self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
