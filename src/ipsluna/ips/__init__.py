@@ -239,15 +239,44 @@ class ips:
         :raises TypeError: if end is not integral
         """
         return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end) 
-    def create(self, offset : int, data : tuple | bytes | bytearray, name : str = None, override : bool = False, sustain : bool = True):
-        self.instances.append(self.instance(offset, data, name))
-        try:
-            self.instances[-1].modify(offset, data, name,override, sustain) 
-            #code to insert at new offset
-        except: 
-            self.instances[-1].destroy()
-            try: self.instances.pop(-1) 
-            except IndexError: pass
+    def create(self, **kwargs):
+
+            """
+            *offset = modify offset | if not an arg then no modification is made
+            *data = modify data     | if not an arg then no modification is made
+            *name = modify name     | if not an arg then no modification is made    | If set to None then new name will be made from new offset
+
+            *override = overriding existing data
+            *sustain  = whilst overriding, attempt to maintain as much mod data as possible
+            """
+            valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
+            if not all(arg in valid_args for arg in kwargs):
+                raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
+    
+
+            offset = kwargs.get("offset", self.offset)
+            data = kwargs.get("data", self.data)
+            name = kwargs.get("name", self.name)
+
+            if name is None:  
+                name = f"Unnamed instance at : {offset}"
+
+            if not isinstance(offset, int): raise TypeError("Offset must be integer")
+            if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
+            if not isinstance(name, str): raise TypeError("name must be string") 
+
+            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
+            if offset > min(0xFFFFFF, (2**self.parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
+
+
+            overwrite = kwargs.get("overwrite", False)
+            sustain = kwargs.get("sustain", True)
+            merge = kwargs.get("merge", False)
+
+
+            temp = self.instances.index(self.in_range(offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
+            self.parent.instances.insert(temp,self.instance(self, offset, data, name, overwrite, sustain, merge)) 
 
         #temporary data must be IMMEDIATLY ascribed to instance, position is arbitrary as it is immediatly
 
@@ -259,7 +288,7 @@ class ips:
         :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
         """
         
-        pass #Implement later 
+         #Implement later 
     def remove(self, instances : instance | str | int) -> instance | tuple:
         """
         Used to remove an instance from an ips class
