@@ -21,7 +21,7 @@ class ips:
         """
 
         def __str__(self): 
-            return 'ips(b"PATCHEOF").create(self, offset = '+f"{self.offset}, data = {self.data}" + (")" if self.name != f"Unamed patch at {self.offset}" else f",name = {self.name})")
+            return 'ips(b"PATCHEOF").create(self, offset = '+f"{self.offset}, data = {self.data}" + (")" if self.name != f"unnamed instance at {self.offset}" else f",name = {self.name})")
         def __del__(self): 
 
             """
@@ -48,7 +48,7 @@ class ips:
             if not isinstance(offset, int): raise TypeError("Offset is not integral!")
             if offset > min(0xFFFFFF, (2**parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
-            if name is None: self.name = f"Unamed patch at {offset}"
+            if name is None: self.name = f"unnamed instance at {offset}"
             elif isinstance(name, str): self.name = name 
             else: raise TypeError("Given name is not of type string and is therefore unsuitable")
             self.rle,self.offset,self.data = isinstance(data, tuple),offset,data 
@@ -239,7 +239,7 @@ class ips:
         :raises TypeError: if end is not integral
         """
         return tuple(instance for instance in self.instances if instance.offset >= start and instance.offset < end) 
-    def create(self, **kwargs):
+    def create(self, offset, data, **kwargs):
 
             """
             *offset = modify offset | if not an arg then no modification is made
@@ -249,24 +249,20 @@ class ips:
             *override = overriding existing data
             *sustain  = whilst overriding, attempt to maintain as much mod data as possible
             """
-            valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
+            valid_args = {"name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
+            
+            name = kwargs.get("name", f"Unnamed instance at : {offset}")
 
-            offset = kwargs.get("offset", self.offset)
-            data = kwargs.get("data", self.data)
-            name = kwargs.get("name", self.name)
-
-            if name is None:  
-                name = f"Unnamed instance at : {offset}"
 
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
             if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
             if not isinstance(name, str): raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if offset > min(0xFFFFFF, (2**self.parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > min(0xFFFFFF, (2**self.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
 
 
@@ -276,19 +272,10 @@ class ips:
 
 
             temp = self.instances.index(self.in_range(offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
-            self.parent.instances.insert(temp,self.instance(self, offset, data, name, overwrite, sustain, merge)) 
+            self.instances.insert(temp,self.instance(self, offset, data, name)) 
 
-        #temporary data must be IMMEDIATLY ascribed to instance, position is arbitrary as it is immediatly
-
-        #self is ips, new is instance obj. Override is flag to avoid overwrites. #sustain attempts to keep old patch data instead of removing it.
-        """
-        Insert an instance into an ips object.
-        :param instance new: instance needed to be implemented
-        :param bool override: Override flag, should clashing data be removed. Disabled by default
-        :param bool sustain: Sustain flag, should data around new data be kept by moving the patches? Enabled by default [Only triggered when overriding]
-        """
         
-         #Implement later 
+
     def remove(self, instances : instance | str | int) -> instance | tuple:
         """
         Used to remove an instance from an ips class
