@@ -76,7 +76,7 @@ class ips:
             name = kwargs.get("name", self.name)
 
             if name is None:  
-                name = f"Unnamed instance at : {offset}"
+                name = f"unnamed instance at {offset}"
 
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
             if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
@@ -108,6 +108,7 @@ class ips:
                 size = data[0] if rle else len(data)
                 end = offset + size
 
+                
                 clashes = list(self.parent.in_range(start, end))    #create mutable of clashes
                 if self in clashes: clashes.remove(self)   #remove self if present, you should not clash with yourself (that is dangerous to your health)
 
@@ -115,15 +116,10 @@ class ips:
                 if len(clashes):    
                     if not overwrite: raise OffsetError("instance cannot be modified due to clashing data") 
 
-                    start = self.parent.in_range(end=offset)[-1].offset    #include first affected instance
-                    rle = isinstance(data,tuple) 
-                    size = data[0] if rle else len(data)
-                    end = offset + size
-
-                    clashes = self.parent.in_range(start, end)
-
                     if sustain: 
                         if len(clashes) == 1:  
+
+                            #dump c0
                             temp = clashes[0].offset, clashes[0].data[0]*clashes[0].data[1] if clashes[0].rle else len(clashes[1].data), 
                             clashes[0].size, clashes[0].end, clashes[0].rle, clashes[0].name
                             self.parent.remove(clashes[0])
@@ -135,11 +131,13 @@ class ips:
                                 size = len(data)
                                 end = offset + size
                             else:
-                                self.parent.create(offset = temp[0], data = temp[1][:offset-temp[0]])
-                                self.parent.create(offset = end, data = temp[1][temp[3] - end:])
+                                if not offset == temp[0]: self.parent.create(offset = temp[0], data = temp[1][:offset-temp[0]])
+                                if not end == temp[3]: self.parent.create(offset = end, data = temp[1][temp[3] - end:])
                             #may add optimizations later, we are assuming the IPS was made well and therefore should be pre-optimized
-
-                        else:  
+                            
+                        else:
+                            
+                            #FOUND FAULT HERE
                             clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset]) 
                             clashes[-1].modify(offset = end, data = (clashes[-1].end-end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[0].end-end:], name = None) 
                             #adjust for name preservation later
@@ -161,12 +159,16 @@ class ips:
                     for clash in clashes: self.parent.remove(clash)
 
                 #redfine attributes based on new data
-                self.offset, self.data,self.name = offset, data, self.name if name is None else name   #gathered that no errors rose, finish the data
-                self.rle = isinstance(self.data,tuple)
+                
+                self.offset, self.data,self.name = offset, data, name  #gathered that no errors rose, finish the data
+                self.rle = rle
+                self.size = data[1] if rle else len(data)
                 #could we just do self.__init__(self, offset, data, name)?   
-                self.parent.instances.remove(self)                                                      #remove
-                temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
-                self.parent.instances.insert(temp,self)                                                 #update  
+                
+                if offset in kwargs.keys():
+                    self.parent.instances.remove(self)                                                      #remove
+                    temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
+                    self.parent.instances.insert(temp,self)                                                 #update  
             
             if name not in (self.name, None):                              #if attempting re-name
                 if isinstance(name,str): self.name = name                           #if legal, perform
