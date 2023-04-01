@@ -46,7 +46,7 @@ class ips:
             if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
             if not isinstance(offset, int): raise TypeError("Offset is not integral!")
-            if offset > min(0xFFFFFF, (2**parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > parent.upperlimit: raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
             if name is None: self.name = f"unnamed instance at {offset}"
             elif isinstance(name, str): self.name = name 
@@ -83,7 +83,7 @@ class ips:
             if not isinstance(name, str): raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if offset > min(0xFFFFFF, (2**self.parent.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > self.parent.upperlimit: raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
 
 
@@ -203,7 +203,7 @@ class ips:
         except IndexError as InvalidIPS: 
             raise Exception(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS   #!!!! FIX LATER, VERY BAD
 
-        self.bitsize = 0xFFFFFF if legacy else 0x100FFFE
+        self.upperlimit = 0xFFFFFF if legacy else 0x100FFFE
         self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
         
     def __iter__(self):
@@ -225,7 +225,7 @@ class ips:
         """
         return tuple(match for match in self.instances if (match.name == specifier if isinstance(specifier,str) else match.offset == specifier))
     def in_range(self,start : int = 0, end : int = None) -> tuple:
-        if end is None: end = self.bitsize
+        if end is None: end = self.upperlimit
         elif not isinstance(end, int): raise TypeError("End of range must be integral or None") 
         if not isinstance(start, int): raise TypeError("start of range must be integral or None")  
         if start < 0: raise ScopeError("Starting range cannot be negative!") 
@@ -263,7 +263,7 @@ class ips:
             if not isinstance(name, str): raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if offset > min(0xFFFFFF, self.bitsize): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > min(0xFFFFFF, self.upperlimit): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
 
 
@@ -294,7 +294,7 @@ class ips:
     
         
 
-def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, legacy : bool = Trues) -> bytes:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, legacy : bool = True) -> bytes:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
