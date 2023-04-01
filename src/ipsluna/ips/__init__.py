@@ -225,7 +225,7 @@ class ips:
         """
         return tuple(match for match in self.instances if (match.name == specifier if isinstance(specifier,str) else match.offset == specifier))
     def in_range(self,start : int = 0, end : int = None) -> tuple:
-        if end is None: end = (2**self.bitsize)-1
+        if end is None: end = self.bitsize
         elif not isinstance(end, int): raise TypeError("End of range must be integral or None") 
         if not isinstance(start, int): raise TypeError("start of range must be integral or None")  
         if start < 0: raise ScopeError("Starting range cannot be negative!") 
@@ -263,7 +263,7 @@ class ips:
             if not isinstance(name, str): raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if offset > min(0xFFFFFF, (2**self.bitsize)-1): raise ScopeError("Offset exceeds limitations of IPS")
+            if offset > min(0xFFFFFF, self.bitsize): raise ScopeError("Offset exceeds limitations of IPS")
             if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
 
 
@@ -294,7 +294,7 @@ class ips:
     
         
 
-def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, bitsize : int = 24) -> bytes:
+def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool = None, legacy : bool = Trues) -> bytes:
         """
         Used to create an IPS file when comparing a modified file to a base file. 
         :param base: The base file that the recepitent of the the IPS will have
@@ -316,11 +316,10 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
         if not isinstance(prepatch,(bytes,bytearray)): raise TypeError("Modified file must be bytes or bytearray") #no solution
         if not isinstance(base,(bytes,bytearray)): raise TypeError("Original file must be bytes or bytearray") #no solution
         if not (isinstance(legal,bool) or legal is None): raise TypeError("`Legal` parameter must be Type `bool`")         #no solution
-        if isinstance(bitsize,int):
-            if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
-        else: raise TypeError("`bitsize` parameter must be Type `int` or `str`")         #no solution
+        if not (isinstance(legacy,bool) or legal is None): raise TypeError("`legacy` parameter must be Type `bool`")         #no solution
 
-        fileupperlimit= 16842750 if bitsize >= 32 else (2**bitsize)-1
+
+        fileupperlimit= 0x100FFFE if legacy >= 32 else 0xFFFF
 
 
         if len(prepatch) > fileupperlimit:
@@ -336,7 +335,7 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
                 elif prepatch[count] == base[count] if count < len(base) else prepatch[count] == 0:
                     count += 1
                 elif prepatch[count:count + 9] == bytes([prepatch[count]])*9:
-                    for readahead in range(min(0xFFFF,len(prepatch)-count)):
+                    for readahead in range(0xFFFF):
                         if prepatch[count+readahead] == base[count+readahead] if count + readahead < len(base) else prepatch[count+readahead] == 0:
                             break 
                         elif prepatch[count:count+readahead] != bytes([prepatch[count]])*readahead:
@@ -350,7 +349,7 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
                         build += count.to_bytes(3,"big")+length.to_bytes(2,"big")+prepatch[count:count+length]
                         count += length
                 else:
-                    for readahead in range(min(0xFFFF,len(prepatch)-count)):
+                    for readahead in range(0xFFFF-count)):
                         if prepatch[count+readahead] == base[count+readahead] if count + readahead < len(base) else prepatch[count+readahead:count+readahead+5] == b"\x00"*5:
                             break 
                         else:
@@ -391,11 +390,11 @@ def apply(patch : ips, base : bytes | bytearray) -> bytes:
             raise Exception("ips class contains impossible data")
 
 
-def make(base : bytes | bytearray, modded : bytes | bytearray, bitsize : int = 24, legal : bool = None) -> bytes:
+def make(base : bytes | bytearray, modded : bytes | bytearray, legacy : bool = True, legal : bool = None) -> bytes:
 
     #make it create `ips` class
-
-    if len(modded) > min(0xFFFFFF,(2**bitsize)-1): raise Exception("Scope impossible")
+    upperlimit = 0x100FFFE if legacy else 0xFFFFFF
+    if len(modded) > upperlimit: raise Exception("Scope impossible")
     ipsf,count = b"",0
     while count != len(modded):
         data = 0
