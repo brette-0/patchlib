@@ -120,7 +120,7 @@ class ips:
                         if len(clashes) == 1:  
 
                             #dump c0
-                            temp = clashes[0].offset, clashes[0].data[0]*clashes[0].data[1] if clashes[0].rle else len(clashes[1].data), 
+                            temp = clashes[0].offset, clashes[0].data[0]*clashes[0].data[1] if clashes[0].rle else len(clashes[0].data), 
                             clashes[0].size, clashes[0].end, clashes[0].rle, clashes[0].name
                             self.parent.remove(clashes[0])
                             clashes = [] 
@@ -131,15 +131,15 @@ class ips:
                                 size = len(data)
                                 end = offset + size
                             else:
-                                if not offset == temp[0]: self.parent.create(offset = temp[0], data = temp[1][:offset-temp[0]])
-                                if not end == temp[3]: self.parent.create(offset = end, data = temp[1][temp[3] - end:])
+                                if temp[0] < offset: self.parent.create(offset = temp[0], data = temp[1][:offset-temp[0]])
+                                if end < temp[3]: self.parent.create(offset = end, data = temp[1][temp[3] - end:])
                             #may add optimizations later, we are assuming the IPS was made well and therefore should be pre-optimized
                             
                         else:
                             
                             #FOUND FAULT HERE
                             clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset]) 
-                            clashes[-1].modify(offset = end, data = (clashes[-1].end-end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[0].end-end:], name = None) 
+                            clashes[-1].modify(offset = end, data = (end-clashes[-1].end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end-clashes[-1].end:], name = None) 
                             #adjust for name preservation later
                             if merge:
                                 offset = clashes[0].offset 
@@ -162,7 +162,7 @@ class ips:
                 
                 self.offset, self.data,self.name = offset, data, name  #gathered that no errors rose, finish the data
                 self.rle = rle
-                self.size = data[1] if rle else len(data)
+                self.size = data[0] if rle else len(data)
                 #could we just do self.__init__(self, offset, data, name)?   
                 
                 if offset in kwargs.keys():
@@ -179,15 +179,14 @@ class ips:
             #If offset has been modified, we need to retrieve the self.parent.instances index of the upper consecutive offset. We use in_range?
             #instance needs to chronologicaly tranpose as well as mathamatically.
 
-    def __init__(self, patch : bytes | bytearray = b"PATCHEOF", bitsize : int = 24):
+    def __init__(self, patch : bytes | bytearray = b"PATCHEOF", legacy : bool = True):
         """
         initialization maps out all instances in normalized dictionary into `instances`
         :raises TypeError: if normalized is not type `dict`
         """
 
         if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
-        if not isinstance(bitsize, int): raise TypeError("specified bitsize is not type `int`")
-        if bitsize % 8 or not bitsize: raise ScopeError("specified bitsize impossible")
+        if not isinstance(legacy, bool): raise TypeError("legacy flag must be either True or False")
 
         try:
             count, changes,patch = 0, {}, patch[5:-3]
@@ -204,7 +203,7 @@ class ips:
         except IndexError as InvalidIPS: 
             raise Exception(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS   #!!!! FIX LATER, VERY BAD
 
-        self.bitsize = bitsize
+        self.bitsize = 0xFFFFFF if legacy else 0x100FFFE
         self.instances = [self.instance(self, offset = offset, data = changes[offset]) for offset in changes]
         
     def __iter__(self):
