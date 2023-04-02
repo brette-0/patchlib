@@ -92,14 +92,80 @@ class ips:
             merge = kwargs.get("merge", False)
 
 
-            """
 
+            
+            """
             When creating the clashes list, we need to read from the end of the last patch to ensure no overlap, however if in the event that we find nothing
             we also want to minimize list generation time, which means a smaller sample size in this case. 
             We can circumvent wasted time by setting the start to the start of the target patch, this is due to the possible existence of patches beyond 
             the offset.
 
             The end arg is set by the temporary end local, which is used to describe the final byte the instance WOULD write up to
+            """ 
+
+            if (offset, data) != (self.offset, self.data):              #Do we actually need to perform any actions regarding the data?
+
+                rle = isinstance(data, tuple) 
+                size = data[0] if rle else len(data) 
+                end = offset + size
+
+
+                start = self.parent.in_range(start = 0, end = offset)
+                clashes = list(self.parent.in_range(start[-1].offset if len(start) else 0,end))         #create a list of instances within this range
+                
+                
+                if self in clashes:clashes.remove(self)                 #do not consider current object a clash. (we will be removed anyway)           
+                for clash in clashes:self.parent.remove(clash.name)     #remove clashes
+
+                if len(clashes): 
+                    if not overwrite: raise OffsetError("instance cannot be modified due to clashing data") 
+                    if sustain:
+                        """
+                        if in the attempt to maintain as much ips data as possible
+                        """
+                        if merge: pass  #come back to this later. (should overrule most quantitiy based logic)
+                        else: 
+                            if len(clashes) > 1: 
+                                if clashes[0].offset < offset: clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset])
+                                if clashes[-1].end > end: clashes[-1].modify(offset = end, data = (end - clashes[-1].end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:], name = None)
+
+                                """
+                                logic may be made redundant, will keep in for now however
+                                """
+                                
+
+                            else: 
+                                clash = clashes[0]  #clashes must be string throughout as we are iterating it later
+                                self.parent.remove(clashes[0])
+                                clashes = []        #skip removal, this is going to be handled here
+                                sustainables = []   #list of preservable data
+                                if clash.offset < offset:
+                                    sustainables.append({offset : clash.offset, data : (offset - self.offset, clash.data[1]) if clash.rle else clash.data[:offset-self.offset]})
+                                if end > clash.end:
+                                    sustainables.append({offset : end, data : (end - clash.end, clash.data[1]) if clash.rle else clash.data [end - clash.end:]})
+                                for sustainable in sustainables:
+                                    self.parent.create(offset = sustainable[offset], data = sustainable[data])
+
+                                """
+                                add some RLE optimal checks later
+                                """
+                    """
+                    Add checks for [0] and [-1].
+                    """
+
+                    #remove last clash
+                    for clash in clashes: self.parent.remove(clash)
+
+
+
+
+                if offset in kwargs.keys(): 
+                    self.parent.remove(self)    #now, chatGPT told me not to do this ... but I am gonna do it anyway
+                    self.parent.create(offset, data)
+
+            ####
+
+
             """
 
             if (offset, data) != (self.offset, self.data):
@@ -169,7 +235,7 @@ class ips:
                     self.parent.instances.remove(self)                                                      #remove
                     temp = self.parent.instances.index(self.parent.in_range(self.offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
                     self.parent.instances.insert(temp,self)                                                 #update  
-            
+            """
             if name not in (self.name, None):                              #if attempting re-name
                 if isinstance(name,str): self.name = name                           #if legal, perform
                 else: raise TypeError("Given name is not suitable as it is not str")#else raise TypeError 
@@ -178,7 +244,7 @@ class ips:
 
             #If offset has been modified, we need to retrieve the self.parent.instances index of the upper consecutive offset. We use in_range?
             #instance needs to chronologicaly tranpose as well as mathamatically.
-
+            
     def __init__(self, patch : bytes | bytearray = b"PATCHEOF", legacy : bool = True):
         """
         initialization maps out all instances in normalized dictionary into `instances`
@@ -255,7 +321,7 @@ class ips:
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
     
             
-            name = kwargs.get("name", f"Unnamed instance at : {offset}")
+            name = kwargs.get("name", f"unnamed instance at {offset}")
 
 
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
@@ -272,9 +338,21 @@ class ips:
             merge = kwargs.get("merge", False)
 
 
-            temp = self.instances.index(self.in_range(offset)[0])                #from start = self.offset, end = (2**self.parent.bitsize)-1 DEF
-            self.instances.insert(temp,self.instance(self, offset, data, name)) 
 
+            """
+
+            add support for funcitonal kwargs with creation last
+            """
+          
+            temp = self.in_range(start = offset)                #from start = self.offset, end = 0xFFFF or ox100FFFE by null termination
+            self.instances.insert(self.instances.index(temp[0]) if len(temp) else len(self.instances),self.instance(self, offset, data, name)) 
+
+            #if length of temp is zero we simply use the length of the instances, which of course creates the next possible index
+
+            """
+            granted that instance creation is just insertion, do we really need to use a parent function???
+            or can we just not borrow some of the code ... perhaps store the function globally??
+            """
         
 
     def remove(self, instances : instance | str | int) -> instance | tuple:
@@ -349,7 +427,7 @@ def build(base : bytes | bytearray, prepatch : bytes | bytearray, legal : bool =
                         build += count.to_bytes(3,"big")+length.to_bytes(2,"big")+prepatch[count:count+length]
                         count += length
                 else:
-                    for readahead in range(0xFFFF-count)):
+                    for readahead in range(0xFFFF-count):
                         if prepatch[count+readahead] == base[count+readahead] if count + readahead < len(base) else prepatch[count+readahead:count+readahead+5] == b"\x00"*5:
                             break 
                         else:
