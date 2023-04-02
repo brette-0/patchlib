@@ -27,4 +27,4 @@ Using `import ipsluna` will install all packages with the `importlib` module. `i
 
 `Luna` serialized class handling may be implemented at a later point in time once enough of the crucial patch filetypes have been completed.
 
-`README.md` applies only to the ***[working build](https://pypi.org/project/ipsluna/)** and therefore may not reflect the **[open source versions](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/).*** Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.
+[docs](BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) applies only to the ***[working build](https://pypi.org/project/ipsluna/)** and therefore may not reflect the **[open source versions](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/).*** Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.
