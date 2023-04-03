@@ -38,7 +38,8 @@ class ips:
 
 
         def modify(self, **kwargs): 
-            parent = self.parent                                                        #for readabilitt
+            parent = self.parent                                                        #for readability 
+            
             valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_args}")
@@ -49,9 +50,6 @@ class ips:
             name = kwargs.get("name", self.name)
 
             size = data[0] if isinstance(data, tuple) else len(data)
-
-            if name is None:  
-                name =f"unnamed instance at {offset} - {end} | {size}"
 
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
             if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
@@ -71,17 +69,28 @@ class ips:
             size = data[0] if rle else len(data) 
             end = offset + size 
 
-            clashes = parent.range(offset, end)
+            clashes = list(parent.range(offset, end))
+            if self in clashes: clashes.remove(self)
 
             if len(clashes):
-                if not overwrite: raise Exception()  #come back to this laters 
-             
+                if not overwrite: raise OffsetError(f"cannot modify {self.name}, as there are {len(clashes)} clash / clashes by range!")  #come back to this laters 
+                
 
                 for clash in clashes: parent.remove(clash) 
 
+            self.data = data 
+            self.rle = rle
+            self.size = size
+            self.end = end
 
-            temp = parent.range(start = end)
-            parent.instances.insert(parent.instances.index(temp[0]) if len(temp) else len(parent.instances),parent.instance(parent, offset, data, name))
+            if "offset" in kwargs.keys():
+                self.offset = offset 
+                parent.instances.remove(self)
+                temp = parent.range(start = end)
+                parent.instances.insert(parent.instances.index(temp[0]) if len(temp) else len(parent.instances),self)
+
+            if name in {None, self.name}:  
+                self.name = f"unnamed instance at {offset} - {end} | {size}"
             
 
     def __init__(self, patch : bytes, legacy : bool = True): 
@@ -156,12 +165,36 @@ class ips:
         end = offset + size 
         name = f"unnamed instance at {offset} - {end} | {size}"
 
-        clashes = self.range(offset, end)
+        clashes = list(self.range(offset, end))
+         
 
-        if len(clashes):
-            if not overwrite: raise Exception()  #come back to this laters 
-             
+        if len(clashes) == 1 and overwrite:
+            clash = clashes[0]
+            if clashes.offset < offset: 
+                if clash.end > end:  
+                    clash = self.remove(clashes[0])
+                    self.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
+                    self.create(offset = end, data = (clash["end"]-end, clash["data"]-1) if clash["rle"] else clash["data"][clash["end"]-end:])
+                    
 
+                    """
+                    removal with double creation may be faster than modification. we can experiment
+                    later we can add checks for rle optimization
+                    """
+                else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset])
+            elif clash.end > end: clash.modify(data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:])
+
+
+        elif len(clashes):
+            if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
+            
+            if sustain:
+                if clashes[0].offset < offset: 
+                    clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
+                    clashes.pop(0)
+                if clashes[-1].end > end: 
+                    clashes[-1].end.modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
+                    clashes.pop(-1)
             for clash in clashes: self.remove(clash) 
 
 
