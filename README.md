@@ -7,13 +7,13 @@ Or can be installed with:
 |--|--|
 |`pip install ipsluna`  | `pip3 install ipsluna` |
  - *Intended for Python 3.7 and above*
- - Uses [`Importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
+ - Uses [`importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
  - Currently can only use `ips` files.
  
 
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
-|IPS|[`ipsluna.ips`](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py)| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) |0.9|15.0 KB |None |
+|IPS|[`ipsluna.ips`](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py)| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) |0.9|13.2 KB |None |
 |BPS|[`ipsluna.bps`]()|Not yet|alpha|5.85 KB|None
 |Xdelta|[`ipsluna.xdelta`]()|Not yet|None|None|None
 |PPF|[`ipsluna.ppf`]()|Not yet|None|None|None
@@ -27,4 +27,4 @@ Using `import ipsluna` will install all packages with the `importlib` module. `i
 
 `Luna` serialized class handling may be implemented at a later point in time once enough of the crucial patch filetypes have been completed.
 
-`README.md` applies only to the ***[working build](https://pypi.org/project/ipsluna/)** and therefore may not reflect the **[open source versions](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/).*** Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.
+[docs](https://github.com/BrettefromNesUniverse/ipsluna/tree/main/docs) applies only to the ***[working build](https://pypi.org/project/ipsluna/)** and therefore may not reflect the **[open source versions](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/).*** Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.
