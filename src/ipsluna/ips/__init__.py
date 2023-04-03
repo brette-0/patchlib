@@ -53,7 +53,7 @@ class ips:
 
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
             if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
-            if not isinstance(name, str): raise TypeError("name must be string") 
+            if not isinstance(name, str) and not name is None: raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
             if offset > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Offset exceeds limitations of IPS")
@@ -72,10 +72,33 @@ class ips:
             clashes = list(parent.range(offset, end))
             if self in clashes: clashes.remove(self)
 
-            if len(clashes):
-                if not overwrite: raise OffsetError(f"cannot modify {self.name}, as there are {len(clashes)} clash / clashes by range!")  #come back to this laters 
-                
+            if len(clashes) == 1 and overwrite:
+                clash = clashes[0]
+                if clash.offset < offset: 
+                    if clash.end > end:  
+                        clash = parent.remove(clashes[0])
+                        parent.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
+                        parent.create(offset = end, data = (clash["end"]-end, clash["data"]-1) if clash["rle"] else clash["data"][clash["end"]-end:])
+                    
 
+                        """
+                    removal with double creation may be faster than modification. we can experiment
+                    later we can add checks for rle optimization
+                        """
+                    else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
+                elif clash.end > end: clash.modify(offset = end,data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:], name = None)
+
+
+            elif len(clashes):
+                if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
+            
+                if sustain:
+                    if clashes[0].offset < offset: 
+                        clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
+                        clashes.pop(0)
+                    if clashes[-1].end > end: 
+                        clashes[-1].end.modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
+                        clashes.pop(-1)
                 for clash in clashes: parent.remove(clash) 
 
             self.data = data 
@@ -181,8 +204,8 @@ class ips:
                     removal with double creation may be faster than modification. we can experiment
                     later we can add checks for rle optimization
                     """
-                else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset])
-            elif clash.end > end: clash.modify(data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:])
+                else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
+            elif clash.end > end: clash.modify(data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:], name = None)
 
 
         elif len(clashes):
