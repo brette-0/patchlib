@@ -97,7 +97,7 @@ class ips:
                         clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
                         clashes.pop(0)
                     if clashes[-1].end > end: 
-                        clashes[-1].end.modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
+                        clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:],name = None)
                         clashes.pop(-1)
                 for clash in clashes: parent.remove(clash) 
 
@@ -208,7 +208,7 @@ class ips:
             elif clash.end > end: clash.modify(data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:], name = None)
 
 
-        elif len(clashes):
+        elif len(clashes): 
             if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
             
             if sustain:
@@ -216,7 +216,7 @@ class ips:
                     clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
                     clashes.pop(0)
                 if clashes[-1].end > end: 
-                    clashes[-1].end.modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
+                    clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
                     clashes.pop(-1)
             for clash in clashes: self.remove(clash) 
 
