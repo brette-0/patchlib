@@ -196,7 +196,7 @@ In some cases, you may opt for `bps` over `ips` if the scope of the project woul
 ### Why should I use `ipsluna` over `ips.py`?
 The main reason you should choose `ipsluna` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `ipsluna` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instnace` class as well as a `name` argument which can be used to annotate an `ips` but also serves some internal purposes.
 
-The benefit to all of this is that now we can *smartly* interact with the instances, we can access them with a variety of functions such as `get_instances`, `in_range`or by accessing the `instances` attribute within the `ips` class which stores the `instances` by order of `offset`.
+The benefit to all of this is that now we can *smartly* interact with the instances, we can access them with a variety of functions such as `get`, `range`or by accessing the `instances` attribute within the `ips` class which stores the `instances` by order of `offset`.
 Furthermore, we can also modify the individual `instance` with `give`, `give_name` and modify the offsets with `super().move(self, offset)`.
 
 Moreover, the project is being actively worked on - and updates and new features should be expected. The code exceeds all known IPS tools and is not even at a release build yet, and it has full docs on the [`PyPI`](https://pypi.org/project/ipsluna/) and active developers in immediate contact on the [Discord](https://discord.com/invite/3DYCru4dCV)!
