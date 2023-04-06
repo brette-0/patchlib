@@ -13,7 +13,7 @@ Or can be installed with:
 
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
-|IPS|[`ipsluna.ips`](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py)| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) |0.9|17 KB |None |
+|IPS|[`ipsluna.ips`](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/src/ipsluna/ips/__init__.py)| [ipsluna.ips](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ipsluna.ips_docs.md) |0.9|17 KB |[IPS](https://github.com/BrettefromNesUniverse/ipsluna/blob/main/docs/ips_docs.md) |
 |BPS|[`ipsluna.bps`]()|Not yet|alpha|5.85 KB|None
 |Xdelta|[`ipsluna.xdelta`]()|Not yet|None|None|None
 |PPF|[`ipsluna.ppf`]()|Not yet|None|None|None
