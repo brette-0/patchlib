@@ -15,6 +15,7 @@ class OffsetError(Exception):
 
 class ips:
     class instance:
+
         def __init__(self, parent, offset : int, data : bytes | tuple, name : str = None):  
 
             """
@@ -86,14 +87,13 @@ class ips:
                     if clash.offset < offset: 
                         if clash.end > end:  
                             clash = parent.remove(clashes[0])
-                            parent.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                            parent.create(offset = end, data = (clash["end"]-end, clash["data"][1]) if clash["rle"] else clash["data"][end-clash["offset"]:])
-                    
+                            parent.create(offset = clash["offset"], data = (
+                                data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
+                                ) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
+                            parent.create(offset = end, data = (
+                                data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
+                                ) if clash["rle"] else clash["data"][end-clash["offset"]:])
 
-                            """
-                        removal with double creation may be faster than modification. we can experiment
-                        later we can add checks for rle optimization
-                            """
                         else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
                     elif clash.end > end: clash.modify(offset = end,data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[end-clash.offset:], name = None)
 
@@ -159,7 +159,7 @@ class ips:
 
 
         except IndexError as InvalidIPS: 
-            raise Exception(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS   #!!!! FIX LATER, VERY BAD
+            raise OffsetError(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS 
 
         self.instances = [self.instance(self, offset, changes[offset]) for offset in changes]
 
@@ -246,16 +246,18 @@ class ips:
         self.instances.insert(self.instances.index(temp[0]) if len(temp) else len(self.instances),self.instance(self, offset, data, name))
         
 
-    def remove(self, ins : int | str | instance) -> dict | tuple: 
-        #add necessary checks
+    def remove(self, discriminator : int | str | instance) -> dict | tuple: 
+        
+        if not isinstance(discriminator, (int, str, ips.instance)): raise TypeError("`discriminator` must be type `int`, `str` or `ips.instance`") 
+
         struct = ()
-        if isinstance(ins, str):
-            ins = self.get(ins)
-        if isinstance(ins, int):
-            ins = [self.get(ins)] 
-        if isinstance(ins, self.instance): 
-            ins = [ins]
-        for find in ins:
+        if isinstance(discriminator, str):
+            discriminator = self.get(discriminator)
+        if isinstance(discriminator, int):
+            discriminator = [self.get(discriminator)] 
+        if isinstance(discriminator, self.instance): 
+            discriminator = [discriminator]
+        for find in discriminator:
             struct = []
             if find in self.instances: 
                 struct.append({element: getattr(find,element) for element in ("offset","data","rle","size","end","name")})
@@ -290,20 +292,23 @@ class ips:
             patch += ins.offset.to_bytes(3, "big")
             if ins.rle: patch += b"\x00\x00" 
             patch += ins.size.to_bytes(2, "big") 
-            if ins.rle: patch += ins.data[1].to_bytes(1, "big") 
+            if ins.rle: patch += ins.data[1]
             else: patch += ins.data
         return b"PATCH"+patch+b"EOF"
+
+    def __iter__(self):
+        return iter(self.instances)
 
 
 
 def build(base : bytes, target : bytes, legacy : bool = True): 
 
-    if not isinstance(base, bytes): raise TypeError()  
-    if not isinstance(target, bytes): raise TypeError()  
-    if not isinstance(legacy, bool): raise TypeError()  
+    if not isinstance(base, bytes): raise TypeError("`base` must be type `bytes`")  
+    if not isinstance(target, bytes): raise TypeError("'target' must be type 'bytes'")  
+    if not isinstance(legacy, bool): raise TypeError("'legacy' myst be type 'bool'")  
 
-    if len(target) > (0xFFFFDFF if legacy else 0x100FFFE): raise ScopeError() 
-    if len(base) > len(target): raise ScopeError()
+    if len(target) > (0xFFFFFF if legacy else 0x100FFFE): raise ScopeError("Target file exceeds IPS limitations!") 
+    if len(base) > len(target): raise ScopeError("Target file must not be smaller than base file!")
     patch,count = b"", 0   
 
     viability = lambda offset, dist: target[offset].to_bytes(1, "big")*dist == target[offset : offset + dist]
@@ -311,13 +316,11 @@ def build(base : bytes, target : bytes, legacy : bool = True):
 
     def rle(): 
         length = 9
-        while compare(count + length) and count + length < len(target) and viability(count, length): 
-            length += 1
+        while compare(count + length) and count + length < len(target) and viability(count, length): length += 1
         return length - 1
     def norle() : 
         length = 1 
-        while compare(count + length) and count + length < len(target) and not (viability(count + length, 9) and all(compare(count + length + r) for r in range(9))): 
-            length += 1
+        while compare(count + length) and count + length < len(target) and not (viability(count + length, 9) and all(compare(count + length + r) for r in range(9))): length += 1
         return length
 
     while count < len(target):
@@ -341,8 +344,7 @@ def build(base : bytes, target : bytes, legacy : bool = True):
                 else: patch += count.to_bytes(3, "big")+length.to_bytes(2, "big")+target[count:count+length] 
                 count += length
 
-        
-
+       
     return b"PATCH"+patch+b"EOF"
 
 
@@ -352,23 +354,9 @@ def build(base : bytes, target : bytes, legacy : bool = True):
 
 
 def apply(patch : ips, base : bytes | bytearray) -> bytes:
-        """
-        document later
-        """
-
         if not isinstance(patch, ips): raise TypeError("IPS given is not of type ips!")
         if not isinstance(base,(bytes,bytearray)): raise TypeError("base given is not of type bytes or bytearray!")
 
         build = b""
         for instance in patch.instances: build+= (b"\x00" * (instance.offset - len(build)) if len(base) < instance.offset else base[len(build):instance.offset])+(instance.data[1]*instance.data[0] if instance.rle else instance.data)
         return build+ base[len(build):]
-
-
-        """
-        if len(base) > instance.offset                         #If still overwriting
-            build+= base[len(build):instance.offset]            #store original data up to this current point
-            else:                                                  #otherwise we are appending new bytes
-                build+= b"\x00" * (instance.offset - len(build))    #and therefore will append zerodata until the first offset
-            if instance.rle:                                       #if instance is of type rle
-                build+= instance.data[1]*instance.data[0]           #append bytes of hunk byte with hunk length | byte : length
-        """
