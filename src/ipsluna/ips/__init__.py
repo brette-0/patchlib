@@ -63,42 +63,63 @@ class ips:
             overwrite = kwargs.get("overwrite", False)
             sustain = kwargs.get("sustain", True)
             merge = kwargs.get("merge", False)
-
             
             rle = isinstance(data, tuple) 
+            if merge and rle: data = data[0]*data[1]; rle = False
             size = data[0] if rle else len(data) 
             end = offset + size 
 
             clashes = list(parent.range(offset, end))
             if self in clashes: clashes.remove(self)
 
-            if len(clashes) == 1 and overwrite:
-                clash = clashes[0]
-                if clash.offset < offset: 
-                    if clash.end > end:  
-                        clash = parent.remove(clashes[0])
-                        parent.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                        parent.create(offset = end, data = (clash["end"]-end, clash["data"]-1) if clash["rle"] else clash["data"][clash["end"]-end:])
+            if len(clashes) == 1 and overwrite and sustain:
+                if merge:  
+                    
+                    temp = parent.remove(clashes[0])    #obtain data from removal
+                   
+                    if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0]*temp["data"][1]
+                    offset, data = temp["offset"], temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]    #modify offset, sandwich data 
+
+                   
+                else:
+                    clash = clashes[0]
+                    if clash.offset < offset: 
+                        if clash.end > end:  
+                            clash = parent.remove(clashes[0])
+                            parent.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
+                            parent.create(offset = end, data = (clash["end"]-end, clash["data"][1]) if clash["rle"] else clash["data"][end-clash["offset"]:])
                     
 
-                        """
-                    removal with double creation may be faster than modification. we can experiment
-                    later we can add checks for rle optimization
-                        """
-                    else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
-                elif clash.end > end: clash.modify(offset = end,data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:], name = None)
+                            """
+                        removal with double creation may be faster than modification. we can experiment
+                        later we can add checks for rle optimization
+                            """
+                        else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
+                    elif clash.end > end: clash.modify(offset = end,data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[end-clash.offset:], name = None)
 
 
             elif len(clashes):
                 if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
             
-                if sustain:
+                if sustain: 
                     if clashes[0].offset < offset: 
-                        clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
+                        if merge: 
+                            temp = parent.remove(clashes[0]) 
+                            if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0] * temp["data"][1] 
+                            data = temp["data"] + data
+                        else:
+                            clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
                         clashes.pop(0)
                     if clashes[-1].end > end: 
-                        clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:],name = None)
-                        clashes.pop(-1)
+                        if merge: 
+                            temp = parent.remove(clashes[-1]) 
+                            if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0] * temp["data"][1] 
+                            data = data + temp["data"]
+                        else:
+                            clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:],name = None)
+                        clashes.pop(-1) 
+
+                        
                 for clash in clashes: parent.remove(clash) 
 
             self.data = data 
@@ -106,7 +127,7 @@ class ips:
             self.size = size
             self.end = end
 
-            if "offset" in kwargs.keys():
+            if offset != self.offset:
                 self.offset = offset 
                 parent.instances.remove(self)
                 temp = parent.range(start = end)
@@ -263,91 +284,72 @@ class ips:
         """
         return [ins for ins in self.instances if ins.end > start and ins.offset < end] 
 
+    def to_bytes(self):
+        patch = b"" 
+        for ins in self.instances:
+            patch += ins.offset.to_bytes(3, "big")
+            if ins.rle: patch += b"\x00\x00" 
+            patch += ins.size.to_bytes(2, "big") 
+            if ins.rle: patch += ins.data[1].to_bytes(1, "big") 
+            else: patch += ins.data
+        return b"PATCH"+patch+b"EOF"
 
 
 
-def make(base : bytes | bytearray, modded : bytes | bytearray, legacy : bool = True, legal : bool = None) -> bytes:
+def build(base : bytes, target : bytes, legacy : bool = True): 
 
-    #make it create `ips` class
-    if len(modded) > (0xFFFFFF if legacy else 0x100FFFE): raise Exception("Scope impossible")
-    ipsf,count = b"",0
-    while count != len(modded):
-        data = 0
-		
-		#The 5 is crucial for rle viability checks with optimization
-        if count  + 5 < len(base) and legal:
-		#do not add matches ever
-		
-            while base[count] is modded[count]:
-                count += 1
-				
-			#if we can't find a match in the next 5 bytes, prefer rle
-            if True not in [base[x] is modded[x] for x in range(5)] and bytes(modded[count])*5 is modded[count:count+5]:
-				
-				#check consecutive bytes
-                while modded[count + data] is modded[count] if len(base) > count + data + 1 else True:
-                    data += 1
-                data = (data//0xFFFF,data%0xFFFF)
-                for split in range(data[0]):
-                    ipsf += count.to_bytes(3,"big")+b"\x00\x00\xff\xff"+bytes([count])
-                    count += 0xFFFF
-                ipsf += count.to_bytes(3,"big")+data[1].to_bytes(2,"big")+bytes([count])
-                count += data[1].to_bytes
-				
-					
-					
-				
-            else:
-                    #for each failed match
-                    while not base[count] is modded[count] if len(base) > count + data + 1 else True:
-                        if bytes([modded[count + data]])*5 is modded[count:count+data+5]: break 
-                        data += 1
-                    data = data // 0xFFFF, data % 0xFFFF
+    if not isinstance(base, bytes): raise TypeError()  
+    if not isinstance(target, bytes): raise TypeError()  
+    if not isinstance(legacy, bool): raise TypeError()  
 
-                    for split in range(data[0]):
-                        ipsf += count.to_bytes(3, "big")+b"\xff\xff"+modded[count:count+0xFFFF] 
-                        count += 0xFFFF 
-                    ipsf += count.to_bytes(3, "big")+data[1].to_bytes(2,"big")+modded[count:count+data[1]] 
-                    count += data[1]
-				    
+    if len(target) > (0xFFFFDFF if legacy else 0x100FFFE): raise ScopeError() 
+    if len(base) > len(target): raise ScopeError()
+    patch,count = b"", 0   
 
+    viability = lambda offset, dist: target[offset].to_bytes(1, "big")*dist == target[offset : offset + dist]
+    compare = lambda offset: (base[offset] != target[offset]) if offset < len(base) else True 
 
-				
+    def rle(): 
+        length = 9
+        while compare(count + length) and count + length < len(target) and viability(count, length): 
+            length += 1
+        return length - 1
+    def norle() : 
+        length = 1 
+        while compare(count + length) and count + length < len(target) and not (viability(count + length, 9) and all(compare(count + length + r) for r in range(9))): 
+            length += 1
+        return length
 
-				
-				
+    while count < len(target):
+        if count == len(target)-1:
+            patch += count.to_bytes(3, "big")+b"\x00\x01"+target[count].to_bytes(1, "big") 
+            count += 1
+        elif base[count] == target[count] if count < len(base) else target[count] == 0:
+            while (base[count] == target[count] if count < len(base) else target[count] == 0) if count < len(target) - 1 else False: count += 1 
         else:
-			#do not append zerodata
-            while not modded[count]:
-                count += 1
+            isrle = viability(count, 9) and all(compare(count + r) for r in range(9)) 
 
-			#is rle viable/possible form this offset
-            if bytes([modded[count]])*5 is count[count:count+5]:
-                while modded[count + data] is modded[count]:
-                    data += 1
-                data = (data//0xFFFF,data%0xFFFF)
-                for split in range(data[0]):
-                    ipsf += count.to_bytes(3,"big")+b"\x00\x00\xff\xff"+bytes([count])
-                    count += 0xFFFF
-                ipsf += count.to_bytes(3,"big")+data[1].to_bytes(2,"big")+bytes([count])
-                count += data[1].to_bytes
-				
-			#granted rle is unviable, check for viability throughout constructor
-            else:
-                while not bytes([modded[count]])*5 is count[count:count+5]:
-                    data += 1
+            length = [norle,rle][isrle]()
 
-                data = data // 0xFFFF, data % 0xFFFF
+            while length > 0xFFFF:
+                if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00\xff\xff"+target[count].to_bytes(1, "big") 
+                else: patch += count.to_bytes(3, "big")+b"\xff\xff"+target[count:count+0xFFFF]
+                count += 0xFFFF 
+                length -= 0xFFFF
+            if length:
+                if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00"+length.to_bytes(2, "big")+target[count].to_bytes(1, "big") 
+                else: patch += count.to_bytes(3, "big")+length.to_bytes(2, "big")+target[count:count+length] 
+                count += length
 
-                for split in range(data[0]):
-                    ipsf += count.to_bytes(3, "big")+b"\xff\xff"+modded[count:count+0xFFFF] 
-                    count += 0xFFFF 
-                ipsf += count.to_bytes(3, "big")+data[1].to_bytes(2,"big")+modded[count:count+data[1]] 
-                count += data[1]
+        
 
-        if count is len(modded)-1:
-            ipsf += count.to_bytes(3,"big")+b"\x00\x00\x00\x01\x00"
-    return ips(ipsf)
+    return b"PATCH"+patch+b"EOF"
+
+
+
+
+
+
 
 def apply(patch : ips, base : bytes | bytearray) -> bytes:
         """
