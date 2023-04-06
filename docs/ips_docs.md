@@ -4,7 +4,7 @@
 
 `IPS` or `International Patching System` filetypes (ending `.ips`) were created in 1993 to express "diffs" between a controlled "origin" file and a resultant "target" file. MS-DOS at this point was the most popular operating system and most people could not store a `32 bit` number due to limitations on their device.
 
-This was developed my Japanese ["ROM-Hackers"](https://en.wikipedia.org/wiki/ROM_hacking) who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before established ROM-Hacking communities were established such as [Super Mario World Central](https://www.smwcentral.net/) which stores the largest archive of [Super Mario World](https://www.mariowiki.com/Super_Mario_World) ROM-Hacks, and is the most popular use for this filetype.
+This was developed my Japanese ["ROM-Hackers"](https://en.wikipedia.org/wiki/ROM_hacking) who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before mainstream ROM-Hacking communities were established such as [Super Mario World Central](https://www.smwcentral.net/) which stores the largest archive of [Super Mario World](https://www.mariowiki.com/Super_Mario_World) ROM-Hacks, and is the most popular use for this filetype.
 
 **Common IPS tools include:**
 
@@ -107,16 +107,16 @@ However as `ipsluna` is a module, usage is determined by the user and therefore 
 
 `ips` constructing is much more detailed than `ips` applying,  as we have to account for the following things:
 
-- `ips` files *should* contain zero original data.*
+- `ips` files *should* contain minimal original data.*
 - `ips` files *should* not attempt to make an impossibly large file.**
 - `ips` files *should* prefer `rle` unless setup is too costly.***
 - `ips` files *must* write to the last byte of the new file if bigger , even if zero.
 
 `*` *This does not mean that it won't work, it just means that you may end up creating an unnecessarily large file that contains potentially sensitive data*
 
-`**` *By default in `ipsluna` it is set to `16,777,215 bytes` ( 16.7 MB) **however** ips **may** reach up to `16,842,750 bytes` by setting `bitsize` to above `24`*
+`**` *By default in `ipsluna` it is set to `16,777,215 bytes` ( 16.7 MB) **however** ips **may** reach up to `16,842,750 bytes` by setting `legacy` to above `False`*
 
-`***` *This is merely optimization, no `ips` **has** to contain `rle` however it should be noted that it is only optimal if the `rle` is of length `6` or higher.*
+`***` *This is merely optimization, no `ips` **has** to contain `rle` however it should be noted that it is only optimal if the `rle` is of length `9` or higher.*
 
 Now that you know the rules, we can begin to create an `ips` file.
 ```python
@@ -186,14 +186,14 @@ def makepatch(basefile,targetfile,outfile):
 ### Why do we sometimes use other patching filetypes?
 `bps` for example, uses variable width offsets, and instead of immediate replacement it uses "actions" to move the data and perform selective "range" overwrites in order to achieve a goal with *variable* scope. `ips` has a reach of `16,842,750 bytes`, however a true legal `ips` could not write beyond the `24 bit` maximum and therefore the maximum reach is truly `16,777,215 bytes`.
 
-`ips` also is horrible inefficient at patching large files, some files may contain duplicates of the base code, which is not just horrible inefficient but also provides a security risk for the original file contents.  A simple `ips` integrity checker could be constructed to compare base to patch to see what resemblance there is .
+`ips` also is horribly inefficient at patching large files, some files may contain duplicates of the base code, which is not just horribly inefficient but also provides a security risk for the original file contents.  A simple `ips` integrity checker could be constructed to compare base to patch to see what resemblance there is .
 
 In conclusion, `ips` is designed for an older generation of consoles that were small and simplistic, as the scope of technology gradually increases we may see `bps` become irrelevant. Currently, and for much time, it is irrational to assume that `bps` can be made redudant however as it can reach up to a theoritcal `2 exabytes` in reach. 
 ### Why do we still use `ips` if better filetypes exist?
 Easiest question of them all, `ips` was just there when it needed to be. Because of `ips`'s common usage and popularity when ROMhacking was more niche than it was the filetype has been the face of early ROMhacking, `ips` is actually quite space efficient for most of these hacks, it fit's its scope perfectly. 
 
 In some cases, you may opt for `bps` over `ips` if the scope of the project would benefit from it, however for minor edits within the size of the base file there is commonly zero reason not to choose `ips` unless the file you are modding requires a higher reach. 
-### Why should I use `iplsuna` over `ips.py`?
+### Why should I use `ipsluna` over `ips.py`?
 The main reason you should choose `ipsluna` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `ipsluna` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instnace` class as well as a `name` argument which can be used to annotate an `ips` but also serves some internal purposes.
 
 The benefit to all of this is that now we can *smartly* interact with the instances, we can access them with a variety of functions such as `get_instances`, `in_range`or by accessing the `instances` attribute within the `ips` class which stores the `instances` by order of `offset`.
