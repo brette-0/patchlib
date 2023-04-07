@@ -22,12 +22,12 @@ class ips:
             #add some documenting later
             """
             
-            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")
-            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if not isinstance(offset, int): raise TypeError("Offset is not integral!")
+            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")                   #this may never be triggered
+            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")        #this may never be triggered
+            if not isinstance(offset, int): raise TypeError("Offset is not integral!")                                      #this may never be triggered
 
-            if offset > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Offset exceeds limitations of IPS")
-            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
+            if offset > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Offset exceeds limitations of IPS")   #this may never be triggered
+            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")                               #this may never be triggered
 
             self.parent, self.rle,self.offset,self.data = parent, isinstance(data, tuple),offset,data 
             self.size = data[0] if self.rle else len(data)
@@ -35,11 +35,11 @@ class ips:
 
             if name is None: self.name = f"unnamed instance at {offset} - {self.end} | {self.size}"
             elif isinstance(name, str): self.name = name 
-            else: raise TypeError("Given name is not of type string and is therefore unsuitable")      
+            else: raise TypeError("Given name is not of type string and is therefore unsuitable")                           #this may never be triggered
 
 
         def modify(self, **kwargs): 
-            parent = self.parent                                                        #for readability 
+            parent = self.parent                                                                                            #for readability, change later
             
             valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
@@ -50,36 +50,36 @@ class ips:
             data = kwargs.get("data", self.data)
             name = kwargs.get("name", self.name)
 
-            size = data[0] if isinstance(data, tuple) else len(data)
-
             if not isinstance(offset, int): raise TypeError("Offset must be integer")
             if not isinstance(data, (bytes, bytearray, tuple)): raise TypeError("data must be `bytes`, `bytearray` or `tuple` object.")
             if not isinstance(name, str) and not name is None: raise TypeError("name must be string") 
 
             if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")
-            if offset > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Offset exceeds limitations of IPS")
-            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")
-
 
             overwrite = kwargs.get("overwrite", False)
             sustain = kwargs.get("sustain", True)
             merge = kwargs.get("merge", False)
             
             rle = isinstance(data, tuple) 
-            if merge and rle: data = data[0]*data[1]; rle = False
+            #if merge and rle: data = data[0]*data[1]; rle = False
             size = data[0] if rle else len(data) 
             end = offset + size 
 
             clashes = list(parent.range(offset, end))
             if self in clashes: clashes.remove(self)
 
+            if end > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
+            if end < 0: raise ScopeError("Target modification is below zero and therefore impossible!")
+
             if len(clashes) == 1 and overwrite and sustain:
                 if merge:  
-                    
-                    temp = parent.remove(clashes[0])    #obtain data from removal
-                   
-                    if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0]*temp["data"][1]
-                    offset, data = temp["offset"], temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]    #modify offset, sandwich data 
+                    temp = parent.remove(clashes[0])                                                                                #obtain data from removal
+
+                    if (temp["data"][1] != data[1]) if rle else True:
+                       if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1]
+                       if rle: data = data[0]*data[1]; rle = False
+                       data = temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]
+                    offset = temp["offset"]
 
                    
                 else:
@@ -91,7 +91,7 @@ class ips:
                                 data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
                                 ) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
                             parent.create(offset = end, data = (
-                                data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
+                                data[1] * (end - clash["end"]) if end - clash["end"] < 9 else (end - clash["end"],data[1])
                                 ) if clash["rle"] else clash["data"][end-clash["offset"]:])
 
                         else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
@@ -105,7 +105,7 @@ class ips:
                     if clashes[0].offset < offset: 
                         if merge: 
                             temp = parent.remove(clashes[0]) 
-                            if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0] * temp["data"][1] 
+                            if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = temp["data"] + data
                         else:
                             clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
@@ -113,7 +113,7 @@ class ips:
                     if clashes[-1].end > end: 
                         if merge: 
                             temp = parent.remove(clashes[-1]) 
-                            if isinstance(temp["data"],tuple): temp["data"] = temp["data"][0] * temp["data"][1] 
+                            if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = data + temp["data"]
                         else:
                             clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:],name = None)
@@ -142,11 +142,12 @@ class ips:
         """
         add some documents later
         """
-        self.legacy = legacy
         if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
         if not isinstance(legacy, bool): raise TypeError("legacy flag must be either True or False")
+        self.legacy = legacy
 
         try:
+            if patch[:5]+patch[-3:] != b"PATCHEOF": raise Exception("Valid Header/Footer not Found!")
             count, changes,patch = 0, {}, patch[5:-3]
             while count != len(patch):
                 count += 8
@@ -154,17 +155,12 @@ class ips:
                     size = int(patch[count - 5:count - 3].hex(),16)
                     changes[int(patch[count-8:count - 5].hex(),16)] = patch[count - 3:count + size - 3]
                     count += size - 3
-                else:  #Handle RLE, only if NON-RLE is not met     
-                    changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]) 
-
-
-        except IndexError as InvalidIPS: 
-            raise OffsetError(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS 
+                else: changes[int(patch[count-8:count - 5].hex(),16)] = int(patch[count - 3:count - 1].hex(),16),bytes([patch[count - 1]]) 
+        except Exception as InvalidIPS: raise OffsetError(f"Given file lacks integrity : {InvalidIPS}") from InvalidIPS 
 
         self.instances = [self.instance(self, offset, changes[offset]) for offset in changes]
-
         if legacy:
-            badinstances = [ins for ins in self.instances if ins.end > 0xFFFFFF]
+            badinstances = tuple(ins for ins in self.instances if ins.end > 0xFFFFFF)
             for ins in badinstances:
                 print(f"{ins} >> will be destroyed due to legacy impossibility")
                 self.remove(ins)
@@ -177,7 +173,7 @@ class ips:
 
         if not isinstance(discriminator, (str, int)): raise TypeError("`discriminator` must be type `str` or `int`") 
 
-        finds = [find for find in self.instances if discriminator in {find.offset, find.name}]
+        finds = tuple(find for find in self.instances if discriminator in {find.offset, find.name})
         return finds if isinstance(discriminator, str) else (finds[0] if len(finds) else None)
 
 
@@ -197,9 +193,9 @@ class ips:
                 if not isinstance(data[1],bytes): raise TypeError("`rle data` must be type `bytes`") 
                 if data[0] > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("`rle length` must be within scope!") 
                 if data[0] < 0: raise ScopeError("`rle length` must be positive integer")
-            else: raise TypeError("`rle hunk` must be type `tuple`")
+            else: raise TypeError("`ips` must be type `bytes` or `tuple`")
         
-        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `str`")
+        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `str` or None")
         if not isinstance(overwrite, bool): raise TypeError("`overwrite` must be type `bool`")
         if not isinstance(sustain, bool): raise TypeError("`sustain` must be type `bool`")
         if not isinstance(merge, bool): raise TypeError("`merge` must be type `bool`")
@@ -251,12 +247,9 @@ class ips:
         if not isinstance(discriminator, (int, str, ips.instance)): raise TypeError("`discriminator` must be type `int`, `str` or `ips.instance`") 
 
         struct = ()
-        if isinstance(discriminator, str):
-            discriminator = self.get(discriminator)
-        if isinstance(discriminator, int):
-            discriminator = [self.get(discriminator)] 
-        if isinstance(discriminator, self.instance): 
-            discriminator = [discriminator]
+        if isinstance(discriminator, str): discriminator = self.get(discriminator)
+        if isinstance(discriminator, int): discriminator = [self.get(discriminator)] 
+        if isinstance(discriminator, self.instance): discriminator = [discriminator]
         for find in discriminator:
             struct = []
             if find in self.instances: 
@@ -264,8 +257,7 @@ class ips:
                 self.instances.remove(find)
                 del find 
 
-        if len(struct) > 1:
-            return (tree for tree in struct) 
+        if len(struct) > 1: return (tree for tree in struct) 
         elif len(struct): return struct[0]
         else: return None
 
@@ -278,13 +270,10 @@ class ips:
         if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
         if end > 0xFFFFFF: raise ScopeError("`end` must be within possible scope") 
         if start > 0xFFFFFF: raise ScopeError("`start` must be within possible scope") 
-        if start > end : raise ValueError("`end` must be higher than `start`") 
-
-
-        """
-        perhaps I may add wrap around
-        """
-        return [ins for ins in self.instances if ins.end > start and ins.offset < end] 
+        if start < 0: start = self.instances[-1].end-start 
+        if end < 0: end = self.instances[-1].end-end
+        if start > end : return [ins for ins in self.instances if ins.end > start]+[ins for ins in self.instances if ins.end < end]
+        else: return [ins for ins in self.instances if ins.end > start and ins.offset < end]     
 
     def to_bytes(self):
         patch = b"" 
@@ -296,12 +285,11 @@ class ips:
             else: patch += ins.data
         return b"PATCH"+patch+b"EOF"
 
-    def __iter__(self):
-        return iter(self.instances)
+    def __iter__(self): return iter(self.instances)
 
 
 
-def build(base : bytes, target : bytes, legacy : bool = True): 
+def build(base : bytes, target : bytes, legacy : bool = True) -> bytes: 
 
     if not isinstance(base, bytes): raise TypeError("`base` must be type `bytes`")  
     if not isinstance(target, bytes): raise TypeError("'target' must be type 'bytes'")  
@@ -327,11 +315,12 @@ def build(base : bytes, target : bytes, legacy : bool = True):
         if count == len(target)-1:
             patch += count.to_bytes(3, "big")+b"\x00\x01"+target[count].to_bytes(1, "big") 
             count += 1
+
         elif base[count] == target[count] if count < len(base) else target[count] == 0:
             while (base[count] == target[count] if count < len(base) else target[count] == 0) if count < len(target) - 1 else False: count += 1 
+
         else:
             isrle = viability(count, 9) and all(compare(count + r) for r in range(9)) 
-
             length = [norle,rle][isrle]()
 
             while length > 0xFFFF:
@@ -339,6 +328,7 @@ def build(base : bytes, target : bytes, legacy : bool = True):
                 else: patch += count.to_bytes(3, "big")+b"\xff\xff"+target[count:count+0xFFFF]
                 count += 0xFFFF 
                 length -= 0xFFFF
+
             if length:
                 if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00"+length.to_bytes(2, "big")+target[count].to_bytes(1, "big") 
                 else: patch += count.to_bytes(3, "big")+length.to_bytes(2, "big")+target[count:count+length] 
