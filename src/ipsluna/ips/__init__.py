@@ -16,7 +16,7 @@ class OffsetError(Exception):
 class ips:
     class instance:
 
-        def __delete__(self):
+        def __del__(self):
             self.parent.remove(self)
 
         def __init__(self, parent, offset : int, data : bytes | tuple, name : str = None):  
@@ -24,13 +24,6 @@ class ips:
             """
             #add some documenting later
             """
-            
-            if not isinstance(data,(bytes,bytearray,tuple)): raise TypeError("Instance data is invalid!")                   #this may never be triggered
-            if not len(data) ==  2 if isinstance(data,tuple) else False: raise ScopeError("Tuple has invalid data!")        #this may never be triggered
-            if not isinstance(offset, int): raise TypeError("Offset is not integral!")                                      #this may never be triggered
-
-            if offset > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Offset exceeds limitations of IPS")   #this may never be triggered
-            if offset < 0: raise ScopeError("Offset is below zero and therefore impossible!")                               #this may never be triggered
 
             self.parent, self.rle,self.offset,self.data = parent, isinstance(data, tuple),offset,data 
             self.size = data[0] if self.rle else len(data)
@@ -42,7 +35,6 @@ class ips:
 
 
         def modify(self, **kwargs): 
-            parent = self.parent                                                                                            #for readability, change later
             
             valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
@@ -68,15 +60,15 @@ class ips:
             size = data[0] if rle else len(data) 
             end = offset + size 
 
-            clashes = list(parent.range(offset, end))
+            clashes = list(self.parent.range(offset, end))
             if self in clashes: clashes.remove(self)
 
-            if end > (0xFFFFFF if parent.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
+            if end > (0xFFFFFF if self.parent.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
             if end < 0: raise ScopeError("Target modification is below zero and therefore impossible!")
 
             if len(clashes) == 1 and overwrite and sustain:
                 if merge:  
-                    temp = parent.remove(clashes[0])                                                                                #obtain data from removal
+                    temp = self.parent.remove(clashes[0])                                                                                #obtain data from removal
 
                     if (temp["data"][1] != data[1]) if rle else True:
                        if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1]
@@ -89,11 +81,11 @@ class ips:
                     clash = clashes[0]
                     if clash.offset < offset: 
                         if clash.end > end:  
-                            clash = parent.remove(clashes[0])
-                            parent.create(offset = clash["offset"], data = (
+                            clash = self.parent.remove(clashes[0])
+                            self.parent.create(offset = clash["offset"], data = (
                                 data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
                                 ) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                            parent.create(offset = end, data = (
+                            self.parent.create(offset = end, data = (
                                 data[1] * (end - clash["end"]) if end - clash["end"] < 9 else (end - clash["end"],data[1])
                                 ) if clash["rle"] else clash["data"][end-clash["offset"]:])
 
@@ -107,7 +99,7 @@ class ips:
                 if sustain: 
                     if clashes[0].offset < offset: 
                         if merge: 
-                            temp = parent.remove(clashes[0]) 
+                            temp = self.parent.remove(clashes[0]) 
                             if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = temp["data"] + data
                         else:
@@ -115,7 +107,7 @@ class ips:
                         clashes.pop(0)
                     if clashes[-1].end > end: 
                         if merge: 
-                            temp = parent.remove(clashes[-1]) 
+                            temp = self.parent.remove(clashes[-1]) 
                             if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = data + temp["data"]
                         else:
@@ -123,21 +115,17 @@ class ips:
                         clashes.pop(-1) 
 
                         
-                for clash in clashes: parent.remove(clash) 
+                for clash in clashes: self.parent.remove(clash) 
 
-            self.data = data 
-            self.rle = rle
-            self.size = size
-            self.end = end
+            self.data,rle,size,end = data,rle,size,end
 
             if offset != self.offset:
                 self.offset = offset 
-                parent.instances.remove(self)
-                temp = parent.range(start = end)
-                parent.instances.insert(parent.instances.index(temp[0]) if len(temp) else len(parent.instances),self)
+                self.parent.instances.remove(self)
+                temp = self.parent.range(start = end)
+                self.parent.instances.insert(self.parent.instances.index(temp[0]) if len(temp) else len(self.parent.instances),self)
 
-            if name in {None, self.name}:  
-                self.name = f"unnamed instance at {offset} - {end} | {size}"
+            if name in {None, self.name}: self.name = f"unnamed instance at {offset} - {end} | {size}"
     
 
 
