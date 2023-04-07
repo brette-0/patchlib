@@ -16,6 +16,9 @@ class OffsetError(Exception):
 class ips:
     class instance:
 
+        def __delete__(self):
+            self.parent.remove(self)
+
         def __init__(self, parent, offset : int, data : bytes | tuple, name : str = None):  
 
             """
@@ -135,13 +138,17 @@ class ips:
 
             if name in {None, self.name}:  
                 self.name = f"unnamed instance at {offset} - {end} | {size}"
-            
+    
+
+
+
+
 
     def __init__(self, patch : bytes, legacy : bool = True): 
-        
         """
         add some documents later
         """
+        
         if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
         if not isinstance(legacy, bool): raise TypeError("legacy flag must be either True or False")
         self.legacy = legacy
@@ -164,6 +171,7 @@ class ips:
             for ins in badinstances:
                 print(f"{ins} >> will be destroyed due to legacy impossibility")
                 self.remove(ins)
+
     
     def get(self, discriminator : str | int) -> instance | tuple: 
         
@@ -287,6 +295,7 @@ class ips:
 
     def __iter__(self): return iter(self.instances)
 
+    
 
 
 def build(base : bytes, target : bytes, legacy : bool = True) -> bytes: 
