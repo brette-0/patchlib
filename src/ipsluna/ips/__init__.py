@@ -49,23 +49,16 @@ class ips:
             merge = kwargs.get("merge", False)
 
             processed = self.parent.check_instance(offset, data, name, overwrite, sustain, merge)
-            
-            rle = processed["rle"]
-            size = processed["size"]
-            end = processed["end"]
-            offset = processed["offset"] 
-            data = processed["data"]
 
-            if offset != self.offset:
+            if processed["offset"] != self.offset:
                 self.offset = offset 
                 self.parent.instances.remove(self)
-                temp = self.parent.range(start = end)
+                temp = self.parent.range(start = processed["end"])
                 self.parent.instances.insert(self.parent.instances.index(temp[0]) if len(temp) else len(self.parent.instances),self)
 
-            self.data,self.rle,self.size,self.end = data,rle,size,end
-            #could we not just do self.__dict__.update()
+            self.__dict__.update(processed)
             
-            if name in {None, self.name}: self.name = f"unnamed instance at {offset} - {end} | {size}"
+            if name in {None, self.name}: self.name = f"unnamed instance at {self.offset} - {self.end} | {self.size}"
             else: self.name = name
     
 
@@ -97,15 +90,15 @@ class ips:
 
 
  
-            clashes = list(self.parent.range(offset, end))
+            clashes = list(self.range(offset, end))
             if self in clashes: clashes.remove(self)
 
-            if end > (0xFFFFFF if self.parent.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
+            if end > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
             if end < 1: raise ScopeError("Target modification is below one and therefore impossible!")
 
             if len(clashes) == 1 and overwrite and sustain:
                 if merge:  
-                    temp = self.parent.remove(clashes[0])[0]                                                                                #obtain data from removal
+                    temp = self.remove(clashes[0])[0]                                                                                #obtain data from removal
 
                     if (temp["data"][1] != data[1]) if rle else True:
                        if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1]
@@ -118,11 +111,11 @@ class ips:
                     clash = clashes[0]
                     if clash.offset < offset: 
                         if clash.end > end:  
-                            clash = self.parent.remove(clashes[0])[0]
-                            self.parent.create(offset = clash["offset"], data = (
+                            clash = self.remove(clashes[0])[0]
+                            self.create(offset = clash["offset"], data = (
                                 data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
                                 ) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                            self.parent.create(offset = end, data = (
+                            self.create(offset = end, data = (
                                 data[1] * (end - clash["end"]) if end - clash["end"] < 9 else (end - clash["end"],data[1])
                                 ) if clash["rle"] else clash["data"][end-clash["offset"]:])
 
@@ -136,7 +129,7 @@ class ips:
                 if sustain: 
                     if clashes[0].offset < offset: 
                         if merge: 
-                            temp = self.parent.remove(clashes[0])[0]
+                            temp = self.remove(clashes[0])[0]
                             if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = temp["data"] + data
                         else:
@@ -144,7 +137,7 @@ class ips:
                         clashes.pop(0)
                     if clashes[-1].end > end: 
                         if merge: 
-                            temp = self.parent.remove(clashes[-1])[0]
+                            temp = self.remove(clashes[-1])[0]
                             if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
                             data = data + temp["data"]
                         else:
@@ -152,8 +145,8 @@ class ips:
                         clashes.pop(-1) 
 
                         
-                for clash in clashes: self.parent.remove(clash) 
-            return {}
+                for clash in clashes: self.remove(clash) 
+            return {"offset":offset,"data":data,"rle":rle,"size":size,"end":end}
 
 
     def __init__(self, patch : bytes, legacy : bool = True): 
