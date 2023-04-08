@@ -1,5 +1,5 @@
-# IPSLuna
-`ipsluna` is the best `ips` file handler out there, while slower than it's `cpp` counterparts. `ipsluna` can boast that it offers 
+# `patchlib.ips`
+`patchlib.ips` is the best `ips` file handler out there, while slower than it's `cpp` counterparts. `patchlib` can boast that it offers 
 
 - Total control of every byte in the IPS
 - Serializable objects for sharing/extended use
@@ -8,10 +8,10 @@
 - extendable scope to `0x100FFFE`, or standard `0xFFFFFF`
 
 ## IPS Handling
-`ipsluna` is useful for *all* elements of `ips` handling, even some that are likely to be left unused.
+`patchlib` is useful for *all* elements of `ips` handling, even some that are likely to be left unused.
 
 ```python
-from ipsluna.ips import *	#import ips library
+from patchlib.ips import *	#import ips library
 
 with open("EXTRA MARIO BROS.ips","rb") as f:
 	mod = f.read()
@@ -71,7 +71,7 @@ for i in mod:
 Once the necessary jobs regarding the `ips` is complete, you can then create a bytearray for it to be wrote to a file with `ips.to_bytes()`.
 
 ## Instance Handling
-The "Total" control of `ipsluna.ips` is as advertised, the `instance` class has one method excluding initialization, which is `modify` which acts just like `ips.create` but `offset` and `data` are now optional as they have been predefined at least once.
+The "Total" control of `patchlib.ips` is as advertised, the `instance` class has one method excluding initialization, which is `modify` which acts just like `ips.create` but `offset` and `data` are now optional as they have been predefined at least once.
 ```python
 reference = mod.get(1234)
 reference.modify(data = (30, b"f"), overwrite = True)
