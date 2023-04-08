@@ -117,7 +117,7 @@ class ips:
                         trailing = self.remove(clashes[-1])[0]
 
                         sr_data = start["data"][1] if start["rle"] else start["data"][0:1]                      #starting viability 
-                        tr_data = trailing["data"][1] if trailing["rle"] else [0:1]                             #trailing viability 
+                        tr_data = trailing["data"][1] if trailing["rle"] else trailing["data"][0:1]                             #trailing viability 
 
                         start_rle = True if start["rle"] else start["data"][0:1]*size == start["data"]          #can start be rle 
                         trail_rle = True if trailing["rle"] else trailing["data"][0:1]*size == trailing["data"] #can trail be rle 
@@ -137,23 +137,23 @@ class ips:
                             elif trail_rle and tr_data:
                                 data = trailing["end"]-offset, data[1]
                                 size = data[0] 
+                            else:data = data[0]*data[1];rle = False
 
-                            else:
-                                if rle: data = data[0]*data[1]
+                        if not rle:
                         
+                            if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
+                            if trailing.end > end:  
+                                trailing = self.remove(clashes[-1])[0]
                                 if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                                if trailing.end > end:  
-                                    trailing = self.remove(clashes[-1])[0]
-                                    if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                                    data = start.data[trailing["end"]-offset:trailing]+data 
-                                    size = len(data)
-                                    end = offset + size
-                                if start.offset < offset:
-                                    if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
-                                    data = start.data[:offset]+data 
-                                    offset = start.offset
-                                    size = len(data)
-                                    end = offset + size
+                                data = start.data[trailing["end"]-offset:trailing]+data 
+                                size = len(data)
+                                end = offset + size
+                            if start.offset < offset:
+                                if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
+                                data = start.data[:offset]+data 
+                                offset = start.offset
+                                size = len(data)
+                                end = offset + size
                     else:
                         if clashes[0].offset < offset: clashes[0].modify(data = ((clashes[0].data[1]*(offset-clashes[0].offset)) if offset-clashes[0].offset < 9 else (offset-clashes[0].offset,clashes[0].data[1])) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset], name = None)
                         else: self.remove(clashes[0])[0]
@@ -235,7 +235,7 @@ class ips:
             struct.append({element: getattr(find,element) for element in ("offset","data","rle","size","end","name")})
             self.instances.remove(find)
 
-        return struct
+        return struct if isinstance(discriminator, (str, ips.instance)) else struct[0]
 
         
 
