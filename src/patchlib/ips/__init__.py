@@ -78,6 +78,7 @@ class ips:
                     if data[0] < 1: raise ScopeError("`rle length` must be positive integer")
                 else: raise TypeError("`data` must be type `bytes` or `tuple`")
             elif len(data) > 0xFFFF: raise ScopeError("`data` is impossibly large")
+            elif not len(data): raise ScopeError("`data` cannot be of length zero.")
             else: rle = False 
             size = (data[0] if rle else len(data))
             end = offset + size
@@ -92,60 +93,50 @@ class ips:
  
             clashes = list(self.range(offset, end))
             if self in clashes: clashes.remove(self)
+           
 
-            if end > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("Target modification exceeds limitations of IPS")
-            if end < 1: raise ScopeError("Target modification is below one and therefore impossible!")
+            if len(clashes) == 1 and sustain and overwrite:
+                temp = self.remove(clashes[0])
+                if merge: 
+                    if rle: data = data[0]*data[1]                          #optimize later
+                    if temp.rle: temp.data = temp.data[0],temp.data[1];temp.rle = False
+                    data = temp["data"][:offset]+data+temp["data"][end:]    #test this it might not work 
+                    offset, end, rle, size = temp["offset"], temp["end"], temp["rle"], temp["size"]
+                else: 
+                    if temp["offset"] < offset: self.create(offset = temp["offset"], data = temp["data"][:offset-temp["offset"]])
+                    if temp["end"] > end: self.create(offset = end, data = temp["data"][end-temp["offset"]:])
+            if len(clashes):
+                if not overwrite: raise OffsetError("cannot modify instance due to clashing data")  
+                
+                for clash in clashes[sustain:-sustain]: self.remove(clash) 
+                if sustain:  
+                    if merge: 
+                        if rle: data = data[0]*data[1]
+                        trailing = self.remove(clashes[-1])
+                        if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
+                        if trailing.end > end:  
+                            trailing = self.remove(clashes[-1])
+                            if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
+                            data = start.data[trailing["end"]-offset:trailing]+data 
+                            size = len(data)
+                            end = offset + size
+                        if clashes[0].offset < offset:
+                            start = self.remove(clashes[0])
+                            if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
+                            data = start.data[:offset]+data 
+                            offset = start.offset
+                            size = len(data)
+                            end = offset + size
+                    else:
+                        if clashes[0].offset < offset: 
+                            clashes[0].modify(data = () if rle else (), name = None)
+                        else: self.remove(clashes[0])
+                        if clashes[-1].end > end: 
+                            clashes[-1].modify(offset = end, data = () if rle else (), name = None)
+                        else: self.remove(clashes[-1])
 
-            if len(clashes) == 1 and overwrite and sustain:
-                if merge:  
-                    temp = self.remove(clashes[0])[0]                                                                                #obtain data from removal
-
-                    if (temp["data"][1] != data[1]) if rle else True:
-                       if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1]
-                       if rle: data = data[0]*data[1]; rle = False
-                       data = temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]
-                    offset = temp["offset"]
-
-                   
-                else:
-                    clash = clashes[0]
-                    if clash.offset < offset: 
-                        if clash.end > end:  
-                            clash = self.remove(clashes[0])[0]
-                            self.create(offset = clash["offset"], data = (
-                                data[1] * (offset - clash["offset"]) if offset - clash["offset"] < 9 else (offset - clash["offset"],data[1])
-                                ) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                            self.create(offset = end, data = (
-                                data[1] * (end - clash["end"]) if end - clash["end"] < 9 else (end - clash["end"],data[1])
-                                ) if clash["rle"] else clash["data"][end-clash["offset"]:])
-
-                        else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
-                    elif clash.end > end: clash.modify(offset = end,data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[end-clash.offset:], name = None)
-
-
-            elif len(clashes):
-                if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
             
-                if sustain: 
-                    if clashes[0].offset < offset: 
-                        if merge: 
-                            temp = self.remove(clashes[0])[0]
-                            if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
-                            data = temp["data"] + data
-                        else:
-                            clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
-                        clashes.pop(0)
-                    if clashes[-1].end > end: 
-                        if merge: 
-                            temp = self.remove(clashes[-1])[0]
-                            if temp["rle"]: temp["data"] = temp["data"][0] * temp["data"][1] 
-                            data = data + temp["data"]
-                        else:
-                            clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:],name = None)
-                        clashes.pop(-1) 
-
-                        
-                for clash in clashes: self.remove(clash) 
+                
             return {"offset":offset,"data":data,"rle":rle,"size":size,"end":end}
 
 
