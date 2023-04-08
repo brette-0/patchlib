@@ -48,7 +48,7 @@ class ips:
             sustain = kwargs.get("sustain", True)
             merge = kwargs.get("merge", False)
 
-            processed = self.parent.check_instance(offset, data, name, overwrite, sustain, merge)
+            processed = self.parent.check_instance(offset, data, name, overwrite, sustain, merge, self)
 
             if processed["offset"] != self.offset:
                 self.offset = offset 
@@ -63,7 +63,7 @@ class ips:
     
 
 
-    def check_instance(self, offset, data, name, overwrite, sustain, merge) -> dict: 
+    def check_instance(self, offset, data, name, overwrite, sustain, merge, reference : instance = None) -> dict: 
             if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `string`")
             if not isinstance(offset, int): raise TypeError("`offset` must be type `int`")
             elif offset < 0: raise ScopeError("`offset` must be a positive integer") 
@@ -82,46 +82,45 @@ class ips:
             else: rle = False 
             size = (data[0] if rle else len(data))
             end = offset + size
-            if end -1 > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("instance attempts to write beyond possible scope")
+            if end - 1 > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("instance attempts to write beyond possible scope")
         
             if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `str` or None")
             if not isinstance(overwrite, bool): raise TypeError("`overwrite` must be type `bool`")
             if not isinstance(sustain, bool): raise TypeError("`sustain` must be type `bool`")
             if not isinstance(merge, bool): raise TypeError("`merge` must be type `bool`")
 
-
  
             clashes = list(self.range(offset, end))
-            if self in clashes: clashes.remove(self)
+            if reference in clashes: clashes.remove(reference)
            
-
-            if len(clashes) == 1 and sustain and overwrite:
-                temp = self.remove(clashes[0])
-                if merge: 
+            if len(clashes) == 1 and overwrite:
+                temp = self.remove(clashes[0])[0]
+                if merge and sustain: 
                     if rle: data = data[0]*data[1]                          #optimize later
-                    if temp.rle: temp.data = temp.data[0],temp.data[1];temp.rle = False
-                    data = temp["data"][:offset]+data+temp["data"][end:]    #test this it might not work 
+                    if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1];temp["rle"] = False
+                    data = temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]
                     offset, end, rle, size = temp["offset"], temp["end"], temp["rle"], temp["size"]
-                else: 
+                elif sustain: 
                     if temp["offset"] < offset: self.create(offset = temp["offset"], data = temp["data"][:offset-temp["offset"]])
                     if temp["end"] > end: self.create(offset = end, data = temp["data"][end-temp["offset"]:])
-            if len(clashes):
+            elif len(clashes):
+
                 if not overwrite: raise OffsetError("cannot modify instance due to clashing data")  
                 
                 for clash in clashes[sustain:-sustain]: self.remove(clash) 
                 if sustain:  
                     if merge: 
                         if rle: data = data[0]*data[1]
-                        trailing = self.remove(clashes[-1])
+                        trailing = self.remove(clashes[-1])[0]
                         if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
                         if trailing.end > end:  
-                            trailing = self.remove(clashes[-1])
+                            trailing = self.remove(clashes[-1])[0]
                             if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
                             data = start.data[trailing["end"]-offset:trailing]+data 
                             size = len(data)
                             end = offset + size
                         if clashes[0].offset < offset:
-                            start = self.remove(clashes[0])
+                            start = self.remove(clashes[0])[0]
                             if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
                             data = start.data[:offset]+data 
                             offset = start.offset
@@ -129,14 +128,13 @@ class ips:
                             end = offset + size
                     else:
                         if clashes[0].offset < offset: 
-                            clashes[0].modify(data = () if rle else (), name = None)
-                        else: self.remove(clashes[0])
+                            clashes[0].modify(data = (offset - clash.offset,clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clash.offset], name = None)
+                        else: self.remove(clashes[0])[0]
                         if clashes[-1].end > end: 
-                            clashes[-1].modify(offset = end, data = () if rle else (), name = None)
-                        else: self.remove(clashes[-1])
+                            clashes[-1].modify(offset = end, data = (clashes[-1].end - end,clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:], name = None)
+                        else: self.remove(clashes[-1])[0]
 
             
-                
             return {"offset":offset,"data":data,"rle":rle,"size":size,"end":end}
 
 
@@ -165,7 +163,6 @@ class ips:
         if legacy:
             badinstances = tuple(ins for ins in self.instances if ins.end > 0xFFFFFF)
             for ins in badinstances:
-                print(f"{ins} >> will be destroyed due to legacy impossibility")
                 self.remove(ins)
 
     
@@ -195,7 +192,7 @@ class ips:
         processed = self.check_instance(offset, data, name, overwrite, sustain, merge)
         name = f"unnamed instance at {processed['offset'] } - {processed['end']} | {processed['size']}" if name is None else name
 
-        temp = self.range(start = processed["end"])
+        temp = self.range(start = processed["end"]-1)
         self.instances.insert(self.instances.index(temp[0]) if len(temp) else len(self.instances),self.instance(self, processed["offset"], processed["data"], name))
         
     
@@ -221,7 +218,7 @@ class ips:
         if end is None: end = 0xFFFFFF
         if not isinstance(start, int): raise TypeError("`start` must be of type `int`")
         if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
-        if end > 0xFFFFFF: raise ScopeError("`end` must be within possible scope") 
+        if end - 1 > 0xFFFFFF: raise ScopeError("`end` must be within possible scope") 
         if start > 0xFFFFFF: raise ScopeError("`start` must be within possible scope") 
         if start < 0: start = self.instances[-1].end+start 
         if end < 0: end = self.instances[-1].end+end
@@ -252,11 +249,11 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
     if not isinstance(target, bytes): raise TypeError("'target' must be type 'bytes'")  
     if not isinstance(legacy, bool): raise TypeError("'legacy' myst be type 'bool'")  
 
-    if len(target) > (0xFFFFFF if legacy else 0x100FFFE): raise ScopeError("Target file exceeds IPS limitations!") 
+    if len(target) -1 > (0xFFFFFF if legacy else 0x100FFFE): raise ScopeError("Target file exceeds IPS limitations!") 
     if len(base) > len(target): raise ScopeError("Target file must not be smaller than base file!")
     patch,count = b"", 0   
 
-    viability = lambda offset, dist: target[offset].to_bytes(1, "big")*dist == target[offset : offset + dist]
+    viability = lambda offset, dist: target[offset].to_bytes(1, "big")*dist == target[offset : offset + dist] if offset < len(target) else False
     compare = lambda offset: (base[offset] != target[offset]) if offset < len(base) else True 
 
     def rle(): 
@@ -274,23 +271,23 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
             patch += count.to_bytes(3, "big")+b"\x00\x01"+target[count].to_bytes(1, "big") 
             count += 1
 
-        elif base[count] == target[count] if count < len(base) else target[count] == 0:
-            while (base[count] == target[count] if count < len(base) else target[count] == 0) if count < len(target) - 1 else False: count += 1 
+        while (base[count] == target[count] if count < len(base) else target[count] == 0) if (count < len(target) - 1 and count != 4542277) else False: count += 1
+            
 
-        else:
-            isrle = viability(count, 9) and all(compare(count + r) for r in range(9)) 
-            length = [norle,rle][isrle]()
+        print(count == 4542278)
+        isrle = viability(count, 9) and all(compare(count + r) for r in range(9)) 
+        length = [norle,rle][isrle]()
 
-            while length > 0xFFFF:
-                if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00\xff\xff"+target[count].to_bytes(1, "big") 
-                else: patch += count.to_bytes(3, "big")+b"\xff\xff"+target[count:count+0xFFFF]
-                count += 0xFFFF 
-                length -= 0xFFFF
+        while length > 0xFFFF:
+            if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00\xff\xff"+target[count].to_bytes(1, "big") 
+            else: patch += count.to_bytes(3, "big")+b"\xff\xff"+target[count:count+0xFFFF]
+            count += 0xFFFF 
+            length -= 0xFFFF
 
-            if length:
-                if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00"+length.to_bytes(2, "big")+target[count].to_bytes(1, "big") 
-                else: patch += count.to_bytes(3, "big")+length.to_bytes(2, "big")+target[count:count+length] 
-                count += length
+        if length:
+            if isrle: patch += count.to_bytes(3, "big")+b"\x00\x00"+length.to_bytes(2, "big")+target[count].to_bytes(1, "big") 
+            else: patch += count.to_bytes(3, "big")+length.to_bytes(2, "big")+target[count:count+length] 
+            count += length
 
        
     return b"PATCH"+patch+b"EOF"
