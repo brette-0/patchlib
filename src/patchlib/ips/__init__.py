@@ -53,7 +53,7 @@ class ips:
             if processed["offset"] != self.offset:
                 self.offset = offset 
                 self.parent.instances.remove(self)
-                temp = self.parent.range(start = processed["end"])
+                temp = self.parent.range(start = processed["end"]-1)
                 self.parent.instances.insert(self.parent.instances.index(temp[0]) if len(temp) else len(self.parent.instances),self)
 
             self.__dict__.update(processed)
@@ -96,13 +96,16 @@ class ips:
             if len(clashes) == 1 and overwrite:
                 temp = self.remove(clashes[0])[0]
                 if merge and sustain: 
-                    if rle: data = data[0]*data[1]                          #optimize later
-                    if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1];temp["rle"] = False
-                    data = temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]
+                    if data[1] != temp["data"][1] if rle and temp["rle"] else True:               
+                        if rle: data = data[0]*data[1]
+                        if temp["rle"]: temp["data"] = temp["data"][0]*temp["data"][1];temp["rle"] = False
+                        data = temp["data"][:offset-temp["offset"]]+data+temp["data"][end-temp["offset"]:]
+                    
                     offset, end, rle, size = temp["offset"], temp["end"], temp["rle"], temp["size"]
                 elif sustain: 
-                    if temp["offset"] < offset: self.create(offset = temp["offset"], data = temp["data"][:offset-temp["offset"]])
-                    if temp["end"] > end: self.create(offset = end, data = temp["data"][end-temp["offset"]:])
+                    
+                    if temp["offset"] < offset: self.create(offset = temp["offset"], data = ((temp[data][1]*offset-temp["offset"]) if offset-temp["offset"] < 9 else (offset-temp["offset",temp["data"][1])) if temp["rle"] else temp["data"][:offset-temp["offset"]])
+                    if temp["end"] > end: self.create(offset = end, data = ((temp[data][1]*temp["end"]-end) if temp["end"]-end < 9 else (temp["end"]-end,temp["data"][1])) if temp["rle"] else temp["data"][end-temp["offset"]:])
             elif len(clashes):
 
                 if not overwrite: raise OffsetError("cannot modify instance due to clashing data")  
@@ -258,12 +261,12 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
 
     def rle(): 
         length = 9
-        while compare(count + length) and count + length < len(target) and viability(count, length): length += 1
+        while count + length != 4542278 and compare(count + length) and count + length < len(target) and viability(count, length): length += 1
         return length - 1
 
     def norle() : 
         length = 1 
-        while compare(count + length) and count + length < len(target) and not (viability(count + length, 9) and all(compare(count + length + r) for r in range(9))): length += 1
+        while (compare(count + length) or count + length == 4542278) and count + length < len(target) and not (viability(count + length, 9) and all(compare(count + length + r) for r in range(9))): length += 1
         return length
 
     while count < len(target):
@@ -273,8 +276,6 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
 
         while (base[count] == target[count] if count < len(base) else target[count] == 0) if (count < len(target) - 1 and count != 4542277) else False: count += 1
             
-
-        print(count == 4542278)
         isrle = viability(count, 9) and all(compare(count + r) for r in range(9)) 
         length = [norle,rle][isrle]()
 
