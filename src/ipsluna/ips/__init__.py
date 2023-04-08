@@ -51,10 +51,49 @@ class ips:
             self.parent.check_instance(offset, data, name, overwrite, sustain, merge)
             
             rle = isinstance(data, tuple) 
-            #if merge and rle: data = data[0]*data[1]; rle = False
             size = data[0] if rle else len(data) 
             end = offset + size 
 
+            self.parent.check_ips(offset, data, rle, end, overwrite, sustain, merge)
+            self.data,self.rle,self.size,self.end = data,rle,size,end
+
+            if offset != self.offset:
+                self.offset = offset 
+                self.parent.instances.remove(self)
+                temp = self.parent.range(start = end)
+                self.parent.instances.insert(self.parent.instances.index(temp[0]) if len(temp) else len(self.parent.instances),self)
+            
+            if name in {None, self.name}: self.name = f"unnamed instance at {offset} - {end} | {size}"
+            else: self.name = name
+    
+
+
+    def check_instance(self, offset, data, name, overwrite, sustain, merge): 
+        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `string`")
+        if not isinstance(offset, int): raise TypeError("`offset` must be type `int`")
+        elif offset < 0: raise ScopeError("`offset` must be a positive integer") 
+        elif offset > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("`offset` must be within scope")
+        if not isinstance(data, bytes):
+            if isinstance(data, tuple):
+                rle = True
+                if not len(data) == 2: raise ValueError("`rle hunk` must contain only `length` and `data`")  
+                if not isinstance(data[0],int): raise TypeError("`rle length` must be type `int`") 
+                if not isinstance(data[1],bytes): raise TypeError("`rle data` must be type `bytes`") 
+                if data[0] > 0xFFFF: raise ScopeError("`rle length` must be within scope!") 
+                if data[0] < 1: raise ScopeError("`rle length` must be positive integer")
+            else: raise TypeError("`data` must be type `bytes` or `tuple`")
+        elif len(data) > 0xFFFF: raise ScopeError("`data` is impossibly large")
+        else: rle = False 
+
+        if offset + (data[0] if rle else len(data)) -1 > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("instance attempts to write beyond possible scope")
+        
+        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `str` or None")
+        if not isinstance(overwrite, bool): raise TypeError("`overwrite` must be type `bool`")
+        if not isinstance(sustain, bool): raise TypeError("`sustain` must be type `bool`")
+        if not isinstance(merge, bool): raise TypeError("`merge` must be type `bool`")
+
+
+    def check_ips(self, offset, data, rle, end, overwrite, sustain, merge):  
             clashes = list(self.parent.range(offset, end))
             if self in clashes: clashes.remove(self)
 
@@ -112,43 +151,6 @@ class ips:
                         
                 for clash in clashes: self.parent.remove(clash) 
 
-            self.data,self.rle,self.size,self.end = data,rle,size,end
-
-            if offset != self.offset:
-                self.offset = offset 
-                self.parent.instances.remove(self)
-                temp = self.parent.range(start = end)
-                self.parent.instances.insert(self.parent.instances.index(temp[0]) if len(temp) else len(self.parent.instances),self)
-            
-            if name in {None, self.name}: self.name = f"unnamed instance at {offset} - {end} | {size}"
-            else: self.name = name
-    
-
-
-    def check_instance(self, offset, data, name, overwrite, sustain, merge): 
-        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `string`")
-        if not isinstance(offset, int): raise TypeError("`offset` must be type `int`")
-        elif offset < 0: raise ScopeError("`offset` must be a positive integer") 
-        elif offset > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("`offset` must be within scope")
-        if not isinstance(data, bytes):
-            if isinstance(data, tuple):
-                rle = True
-                if not len(data) == 2: raise ValueError("`rle hunk` must contain only `length` and `data`")  
-                if not isinstance(data[0],int): raise TypeError("`rle length` must be type `int`") 
-                if not isinstance(data[1],bytes): raise TypeError("`rle data` must be type `bytes`") 
-                if data[0] > 0xFFFF: raise ScopeError("`rle length` must be within scope!") 
-                if data[0] < 1: raise ScopeError("`rle length` must be positive integer")
-            else: raise TypeError("`data` must be type `bytes` or `tuple`")
-        elif len(data) > 0xFFFF: raise ScopeError("`data` is impossibly large")
-        else: rle = False 
-
-        if offset + (data[0] if rle else len(data)) -1 > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("instance attempts to write beyond possible scope")
-        
-        if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `str` or None")
-        if not isinstance(overwrite, bool): raise TypeError("`overwrite` must be type `bool`")
-        if not isinstance(sustain, bool): raise TypeError("`sustain` must be type `bool`")
-        if not isinstance(merge, bool): raise TypeError("`merge` must be type `bool`")
-
 
     def __init__(self, patch : bytes, legacy : bool = True): 
         """
@@ -192,10 +194,15 @@ class ips:
 
 
 
-    def create(self, offset : int, data : bytes | tuple, name : str = None, overwrite : bool = False, sustain : bool = True, merge : bool = False):  
+    def create(self, offset : int, data : bytes | tuple, **kwargs):  
         
         """ 
         """
+
+        name = kwargs.get("name", None)
+        overwrite = kwargs.get("overwrite", False)
+        sustain = kwargs.get("sustain", True)
+        merge = kwargs.get("merge", False)
 
         self.check_instance(offset, data, name, overwrite, sustain, merge)
 
@@ -204,37 +211,7 @@ class ips:
         end = offset + size 
         name = f"unnamed instance at {offset} - {end} | {size}" if name is None else name
 
-        clashes = list(self.range(offset, end))
-         
-
-        if len(clashes) == 1 and overwrite:
-            clash = clashes[0]
-            if clashes.offset < offset: 
-                if clash.end > end:  
-                    clash = self.remove(clashes[0])[0]
-                    self.create(offset = clash["offset"], data = (offset - clash["offset"],clash["data"][1]) if clash["rle"] else clash["data"][:offset - clash["offset"]]) 
-                    self.create(offset = end, data = (clash["end"]-end, clash["data"]-1) if clash["rle"] else clash["data"][clash["end"]-end:])
-                    
-
-                    """
-                    removal with double creation may be faster than modification. we can experiment
-                    later we can add checks for rle optimization
-                    """
-                else: clash.modify(data = (offset - clash.offset, clash.data[1]) if clash.rle else clash.data[:offset - clash.offset], name = None)
-            elif clash.end > end: clash.modify(data = (clash.end - end, clash.data[1]) if clash.rle else clash.data[clash.end-end:], name = None)
-
-
-        elif len(clashes): 
-            if not overwrite: raise OffsetError("cannot modify instance due to clashing data!")  #come back to this laters 
-            
-            if sustain:
-                if clashes[0].offset < offset: 
-                    clashes[0].modify(data = (offset - clashes[0].offset, clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clashes[0].offset], name = None)
-                    clashes.pop(0)
-                if clashes[-1].end > end: 
-                    clashes[-1].modify(offset = end, data = (clashes[-1].end - end, clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[clashes[-1].end - end:],name = None)
-                    clashes.pop(-1)
-            for clash in clashes: self.remove(clash) 
+        self.check_ips(offset, data, rle, end, overwrite, sustain, merge)
 
 
         temp = self.range(start = end)
