@@ -94,7 +94,7 @@ class ips:
             if reference in clashes: clashes.remove(reference)
            
             if len(clashes) == 1 and overwrite:
-                temp = self.remove(clashes[0])[0]
+                temp = self.remove(clashes[0])
                 if merge and sustain: 
                     if data[1] != temp["data"][1] if rle and temp["rle"] else True:               
                         if rle: data = data[0]*data[1]
@@ -113,8 +113,8 @@ class ips:
                 for clash in clashes[sustain:-sustain]: self.remove(clash) 
                 if sustain:  
                     if merge:
-                        start = self.remove(clashes[0])[0]
-                        trailing = self.remove(clashes[-1])[0]
+                        start = self.remove(clashes[0])
+                        trailing = self.remove(clashes[-1])
 
                         sr_data = start["data"][1] if start["rle"] else start["data"][0:1]                      #starting viability 
                         tr_data = trailing["data"][1] if trailing["rle"] else trailing["data"][0:1]                             #trailing viability 
@@ -143,7 +143,7 @@ class ips:
                         
                             if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
                             if trailing.end > end:  
-                                trailing = self.remove(clashes[-1])[0]
+                                trailing = self.remove(clashes[-1])
                                 if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
                                 data = start.data[trailing["end"]-offset:trailing]+data 
                                 size = len(data)
@@ -156,9 +156,9 @@ class ips:
                                 end = offset + size
                     else:
                         if clashes[0].offset < offset: clashes[0].modify(data = ((clashes[0].data[1]*(offset-clashes[0].offset)) if offset-clashes[0].offset < 9 else (offset-clashes[0].offset,clashes[0].data[1])) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset], name = None)
-                        else: self.remove(clashes[0])[0]
+                        else: self.remove(clashes[0])
                         if clashes[-1].end > end: clashes[-1].modify(offset = end, data = ((clashes[-1].data[1]*clashes[-1].end-end) if clashes[-1].end-end < 9 else (clashes[-1].end-end,clashes[-1].data[1])) if clashes[-1].rle else clashes[-1].data[end-clashes[-1].offset:], name = None)
-                        else: self.remove(clashes[-1])[0]
+                        else: self.remove(clashes[-1])
 
             
             return {"offset":offset,"data":data,"rle":rle,"size":size,"end":end}
