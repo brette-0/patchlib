@@ -112,23 +112,48 @@ class ips:
                 
                 for clash in clashes[sustain:-sustain]: self.remove(clash) 
                 if sustain:  
-                    if merge: 
-                        if rle: data = data[0]*data[1]
+                    if merge:
+                        start = self.remove(clashes[0])[0]
                         trailing = self.remove(clashes[-1])[0]
-                        if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                        if trailing.end > end:  
-                            trailing = self.remove(clashes[-1])[0]
-                            if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                            data = start.data[trailing["end"]-offset:trailing]+data 
-                            size = len(data)
-                            end = offset + size
-                        if clashes[0].offset < offset:
-                            start = self.remove(clashes[0])[0]
-                            if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
-                            data = start.data[:offset]+data 
-                            offset = start.offset
-                            size = len(data)
-                            end = offset + size
+
+                        sr_data = start["data"][1] if start["rle"] else start["data"][0:1]                      #starting viability 
+                        tr_data = trailing["data"][1] if trailing["rle"] else [0:1]                             #trailing viability 
+
+                        start_rle = True if start["rle"] else start["data"][0:1]*size == start["data"]          #can start be rle 
+                        trail_rle = True if trailing["rle"] else trailing["data"][0:1]*size == trailing["data"] #can trail be rle 
+                        
+                        if rle: 
+                            if start_rle and sr_data:
+                                if trail_rle and tr_data:
+                                    offset = start["offset"] 
+                                    end = trailing["end"]
+                                    data = end-offset, data[1] 
+                                    size = data[0] 
+                                else:
+                                    offset = start["offset"] 
+                                    data = end - offset, data[1] 
+                                    size = data[0] 
+                                    end = offset + size 
+                            elif trail_rle and tr_data:
+                                data = trailing["end"]-offset, data[1]
+                                size = data[0] 
+
+                            else:
+                                if rle: data = data[0]*data[1]
+                        
+                                if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
+                                if trailing.end > end:  
+                                    trailing = self.remove(clashes[-1])[0]
+                                    if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
+                                    data = start.data[trailing["end"]-offset:trailing]+data 
+                                    size = len(data)
+                                    end = offset + size
+                                if start.offset < offset:
+                                    if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
+                                    data = start.data[:offset]+data 
+                                    offset = start.offset
+                                    size = len(data)
+                                    end = offset + size
                     else:
                         if clashes[0].offset < offset: clashes[0].modify(data = ((clashes[0].data[1]*(offset-clashes[0].offset)) if offset-clashes[0].offset < 9 else (offset-clashes[0].offset,clashes[0].data[1])) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset], name = None)
                         else: self.remove(clashes[0])[0]
