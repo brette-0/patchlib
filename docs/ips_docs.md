@@ -28,7 +28,7 @@ The `IPS` filetype was developed my Japanese ["ROM-Hackers"](https://en.wikipedi
  - [`ips.py`](https://www.romhacking.net/utilities/1280/)
  - [Chief-Net IPS](https://www.romhacking.net/utilities/578/)
 
-[IPS Peek](https://www.romhacking.net/utilities/1038/) and [Chief-Net IPS](https://www.romhacking.net/utilities/578/) both allow selective patching, meaning that parts of the IPS may be excluded or included when patching by the users choice.[`ips.py`](https://www.romhacking.net/utilities/1280/) is a Python `ips` tool, however it is not as versatile as `ipsluna` which is the *recommended*  Python IPS Module.
+[IPS Peek](https://www.romhacking.net/utilities/1038/) and [Chief-Net IPS](https://www.romhacking.net/utilities/578/) both allow selective patching, meaning that parts of the IPS may be excluded or included when patching by the users choice.[`ips.py`](https://www.romhacking.net/utilities/1280/) is a Python `ips` tool, however it is not as versatile as `patchlib` which is the *recommended*  Python IPS Module.
 
 [ROM Patcher JS](https://www.marcrobledo.com/RomPatcher.js/), however eradicates the usage of executable "diff" appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being `xdelta` files that use `Xdelta3` format which requires an x64/ARM environment that most web services cannot offer)
 
@@ -115,7 +115,7 @@ However as `ipsluna` is a module, usage is determined by the user and therefore 
 
 `*` *This does not mean that it won't work, it just means that you may end up creating an unnecessarily large file that contains potentially sensitive data*
 
-`**` *By default in `ipsluna` it is set to `16,777,215 bytes` ( 16.7 MB) however `ips` may reach up to `16,842,750 bytes` by setting `legacy` to  `False`*
+`**` *By default in `patchlib` it is set to `16,777,215 bytes` ( 16.7 MB) however `ips` may reach up to `16,842,750 bytes` by setting `legacy` to  `False`*
 
 `***` *This is merely optimization, no `ips` has to contain `rle` however it should be noted that it is only optimal if the `rle` is of length `9` or higher.*
 
@@ -195,20 +195,20 @@ Easiest question of them all, `ips` was just there when it needed to be. Because
 
 In some cases, you may opt for `bps` over `ips` if the scope of the project would benefit from it, however for minor edits within the size of the base file there is commonly zero reason not to choose `ips` unless the file you are modding requires a higher reach. 
 ### Why should I use `iplsuna` over `ips.py`?
-The main reason you should choose `ipsluna` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `ipsluna` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instance` class as well as a `name` attribute which can be used to annotate an `ips`.
+The main reason you should choose `patchlib` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `patchlib` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instance` class as well as a `name` attribute which can be used to annotate an `ips`.
 
 The benefit to all of this is that now we can *smartly* interact with the instances, we can access them with a variety of functions such as `get`, `range`or by accessing the `instances` attribute within the `ips` class which stores each `instance` by order of `offset`. We can also modify the individual `instance` with the `modify` method.
 
-Moreover, the project is being actively worked on - and updates and new features should be expected. The code exceeds all known IPS tools and is not even at a release build yet, and it has full docs on the [`PyPI`](https://pypi.org/project/ipsluna/) and active developers in immediate contact on the [Discord](https://discord.com/invite/3DYCru4dCV)!
+Moreover, the project is being actively worked on - and updates and new features should be expected. The code exceeds all known IPS tools and is not even at a release build yet, and it has full docs on the [`PyPI`](https://pypi.org/project/patchlib/) and active developers in immediate contact on the [Discord](https://discord.com/invite/3DYCru4dCV)!
 ### Should I make my own `ips` handling tool?
-There is very minimal reason to do this. As it stands, even when `ips` filetypes are being manipulated at a deep level, the tools provided are often not even fully used as rarely does the user exceed common `building` and `applying`. There is generally a surplus of tools, should you create your own `ips` tool there should be a reason for this, `ipsluna`'s existence is to provide total control in a `Python 3.7` runtime or above.
+There is very minimal reason to do this. As it stands, even when `ips` filetypes are being manipulated at a deep level, the tools provided are often not even fully used as rarely does the user exceed common `building` and `applying`. There is generally a surplus of tools, should you create your own `ips` tool there should be a reason for this, `patchlib`'s existence is to provide total control in a `Python 3.7` runtime or above.
 
 `JIPS` is forgivable as it runs in a Java runtime, meaning that it can run on devices that do not support `Python 3.7` or `Python` at all! Because `JIPS` uses `Java`, the whole ideology being that it can run in *any* environment, this tool is very helpful to those who do not have an Operating System which any dedicated tool can support.
 
-The same *would* go for `ips.py` if `ipsluna` did not render it redundant.
+The same *would* go for `ips.py` if `patchlib` did not render it redundant.
 If you wish to make a tool, ensure that the benefits are not found immediately in someone else's tools alone.  Once you can confirm there is a point to doing this baring scope, usability and cause, making an `ips` handler makes complete sense.
-### Can I contribute towards `ipsluna`?
-Yes! `ipsluna` GitHub allows for forks to be made and anyone with some `Python` skill can be included in the Project! In fact, there are many elements of the project left **totally** untouched that you could begin working on! If you are interested feel free in contacting on the [Discord](https://discord.com/invite/3DYCru4dCV)!
+### Can I contribute towards `patchlib`?
+Yes! `patchlib` GitHub allows for forks to be made and anyone with some `Python` skill can be included in the Project! In fact, there are many elements of the project left **totally** untouched that you could begin working on! If you are interested feel free in contacting on the [Discord](https://discord.com/invite/3DYCru4dCV)!
 ### Is it not better just to make your own filetype?
 
 This should be overall somewhat discouraged for these reasons:
