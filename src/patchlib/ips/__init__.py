@@ -104,8 +104,8 @@ class ips:
                     offset, end, rle, size = temp["offset"], temp["end"], temp["rle"], temp["size"]
                 elif sustain: 
                     
-                    if temp["offset"] < offset: self.create(offset = temp["offset"], data = ((temp[data][1]*offset-temp["offset"]) if offset-temp["offset"] < 9 else (offset-temp["offset",temp["data"][1])) if temp["rle"] else temp["data"][:offset-temp["offset"]])
-                    if temp["end"] > end: self.create(offset = end, data = ((temp[data][1]*temp["end"]-end) if temp["end"]-end < 9 else (temp["end"]-end,temp["data"][1])) if temp["rle"] else temp["data"][end-temp["offset"]:])
+                    if temp["offset"] < offset: self.create(offset = temp["offset"], data = ((temp["data"][1]*(offset-temp["offset"])) if offset-temp["offset"] < 9 else (offset-temp["offset"],temp["data"][1])) if temp["rle"] else temp["data"][:offset-temp["offset"]])
+                    if temp["end"] > end: self.create(offset = end, data = ((temp["data"][1]*temp["end"]-end) if temp["end"]-end < 9 else (temp["end"]-end,temp["data"][1])) if temp["rle"] else temp["data"][end-temp["offset"]:])
             elif len(clashes):
 
                 if not overwrite: raise OffsetError("cannot modify instance due to clashing data")  
@@ -130,11 +130,9 @@ class ips:
                             size = len(data)
                             end = offset + size
                     else:
-                        if clashes[0].offset < offset: 
-                            clashes[0].modify(data = (offset - clash.offset,clashes[0].data[1]) if clashes[0].rle else clashes[0].data[:offset - clash.offset], name = None)
+                        if clashes[0].offset < offset: clashes[0].modify(data = ((clashes[0].data[1]*(offset-clashes[0].offset)) if offset-clashes[0].offset < 9 else (offset-clashes[0].offset,clashes[0].data[1])) if clashes[0].rle else clashes[0].data[:offset-clashes[0].offset], name = None)
                         else: self.remove(clashes[0])[0]
-                        if clashes[-1].end > end: 
-                            clashes[-1].modify(offset = end, data = (clashes[-1].end - end,clashes[-1].data[1]) if clashes[-1].rle else clashes[-1].data[end - clashes[-1].offset:], name = None)
+                        if clashes[-1].end > end: clashes[-1].modify(offset = end, data = ((clashes[-1].data[1]*clashes[-1].end-end) if clashes[-1].end-end < 9 else (clashes[-1].end-end,clashes[-1].data[1])) if clashes[-1].rle else clashes[-1].data[end-clashes[-1].offset:], name = None)
                         else: self.remove(clashes[-1])[0]
 
             
