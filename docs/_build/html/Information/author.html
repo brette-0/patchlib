@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Producer’s Notice &mdash; patchlib 1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            patchlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../package_docs/ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filetype_docs/ips.html">International Patching System</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">patchlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Producer’s Notice</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/Information/author.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="producer-s-notice">
+<h1>Producer’s Notice<a class="headerlink" href="#producer-s-notice" title="Permalink to this heading"></a></h1>
+<p>Hi there! My name is Brette and I am the Developer of this module and I have a little story to tell if you continue reading about how this project came to be.</p>
+<p>I was originally given the task of an auto-patch Discord bot that would process these patches against a comapred ROM, for this I needed a basic understanding of how the <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetype worked and I spent about a week consitently researching this.</p>
+<p>After much time into the projects development I had got in contact witht he owner of the Super Mario Bros 3 Modding Discord and suggested that I make a bot which countered Piracy and if a ROM was present, it would create an <code class="docutils literal notranslate"><span class="pre">ips</span></code> file for it, while it has the drawbacks of essentially creating other games (assuming they are larger than Super Mario Bros 3) this is to be expected and appreciated as impossible for me to control.</p>
+<p>The original <code class="docutils literal notranslate"><span class="pre">ips</span></code> contrusction code was incredibly crude, producing unoptimized large <code class="docutils literal notranslate"><span class="pre">ips</span></code> files and did not solve the early <code class="docutils literal notranslate"><span class="pre">EOF</span></code> issue in which the offset 4542278 was misinterpreted as the footer which serves to terminate patching. It took me about two weeks to create this bot another week spent on the <code class="docutils literal notranslate"><span class="pre">ips</span></code> construction code and another week spent misunderstanding the <code class="docutils literal notranslate"><span class="pre">discord.py</span></code> API.</p>
+<p>After this I had learned much more Python, as of writing this I am yet to have reached adulthood and am a hobbyist developer who as of writing this can only code in Python and MOS 6502 Assembly. During this time period the AI Assistant ChatGPT was released to the public and I soon found a better teacher than I ever had, while it often suggested minor optimizaitons - the effortless nature in which I recieved answers for any queery I had made learning a fast and fun process which improved my worth ethic, mentality and undoubtly the product quality too.</p>
+<p>After reviewing my code on both my Discord bots I had concluded that the code was simply inadequate, I am no perfectionist but if there is an identifiable problem then there is a conjurable solution. After at least a dozen attempts at creating optimized build code, countless tests on <code class="docutils literal notranslate"><span class="pre">instance</span></code> handling with all of it’s unnecessarily helpful and complicated optional kwargs I had created the best <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler the world has seen.</p>
+<p>I have much to be greatful for, if it were not for the incredibly awkardly wrote <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetype docs that I stumbled on when researching for file structure I would never have gotten to where I am. No one should go through the struggle that I did to get where I am, for this I create the best tool that I can and I offet detailed explanatory documentation on the filetype and the module such that no one should ever be confused about this again.</p>
+<p>In it’s current state, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> only supports <code class="docutils literal notranslate"><span class="pre">ips</span></code>, however there are immediate plans to approach the different <code class="docutils literal notranslate"><span class="pre">patch</span></code> types with the same ideology and structure as <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code>. If you have found this tool helpul whatsoever and have read up until this part, please feel free to join the <a class="reference external" href="https://www.discord.gg/3DYCru4dCV">Discord Server</a> where you can see all of my products, including the aforementioned bots that use this module!</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, BrettefromNesUniverse.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
