@@ -9,7 +9,7 @@ Or can be installed with:
  - *Intended for Python 3.7 and above*
  - Uses [`importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
  - Currently can only use `ips` files.
- 
+ - [Interactive Docs](https://patchlib.readthedocs.io)
 
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
