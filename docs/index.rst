@@ -81,12 +81,4 @@ In either ``cmd`` or ``powershell`` for Windows, and ``terminal`` for Posix/Unix
 
    Information/author
    Information/faq
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Information/resources
