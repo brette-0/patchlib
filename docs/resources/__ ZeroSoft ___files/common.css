@@ -1,0 +1,16 @@
+h1 {font-family:Arial, Helvetica, sans-serif;color:White;font-size:10pt;background-color:#800080;font-weight:bold;padding-left:10px}
+p {font-family:Arial, Helvetica, sans-serif;color:Black;font-size:10pt;margin-left:5;margin-right:5}
+p.title {color: #000080;font-size:24pt;font-weight:bold;margin-left:0;margin-right:0}
+p.small {font-size: 8pt}
+b {color: #000080}
+b.p {color: #800080}
+b.w {color: #FFFFFF}
+b.new {color: #000080;background-color: #FFFF00}
+td {font-family:Arial, Helvetica, sans-serif;font-size:10pt;color:#000000;background-color:#FFFFFF}
+td.sectionh {border-top:2 solid #000080;font-weight:bold;font-size:12pt;color:#800080;border-bottom:2 solid #000080}
+td.tableh {background-color: #800080;color: #FFFFFF;font-weight: bold}
+td.maintitle {border-top:5 solid #800080;border-bottom:2 solid #800080;font-size:24pt;font-weight:bold;color:#000080}
+a {text-decoration:none;font-family:Arial, Helvetica, sans-serif;color:#800080}
+a.sectionh {text-decoration:none}
+a:hover{color : #000080}
+
