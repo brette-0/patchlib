@@ -1,3 +1,7 @@
+"""
+experimental alpha bps handler
+"""
+
 def encode(data : int) -> bytearray:  #create function return bytearray, takes int
     """
     encodes standard 64bit int, may be higher, into variable width beat bytearray

@@ -1,2 +1,7 @@
+"""
+Import all patchlib subpackages.
+"""
+
 from importlib import import_module
-ips = import_module("patchlib.ips")
+try:ips = import_module("patchlib.ips")
+except: print("Missing `patchlib.ips`")

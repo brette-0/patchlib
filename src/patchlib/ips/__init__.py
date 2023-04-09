@@ -1,3 +1,7 @@
+"""
+IPS filetype handler
+"""
+
 class ScopeError(Exception): 
     """
     Raised when job scope exceeds limitations of IPS.
