@@ -13,7 +13,7 @@ Or can be installed with:
 
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
-|IPS|[`patchlib.ips`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py)| [patchlib.ips](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/patchlib.ips_docs.md) |0.9|17 KB |[IPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/ips_docs.md) |
+|IPS|[`patchlib.ips`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py)| [patchlib.ips](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/patchlib.ips_docs.md) |0.9|16.464 KB |[IPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/ips_docs.md) |
 |BPS|[`patchlib.bps`]()|Not yet|alpha|5.85 KB|None
 |Xdelta|[`patchlib.xdelta`]()|Not yet|None|None|None
 |PPF|[`patchlib.ppf`]()|Not yet|None|None|None
