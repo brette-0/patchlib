@@ -7,24 +7,26 @@ class ScopeError(Exception):
 
 class OffsetError(Exception): 
     """
-    Raised when attepting to perform an illegal operation due to offset clashing
+    Raised when data already is present at a target offset.
     """
     pass
 
 
 
 class ips:
+    """
+    Takes a patch `bytes` file and normalizes into easily modifiable structure.
+    """
+
     class instance:
+        """
+        Stores all the data relevant to the individual `instance`
+        """
 
         def __del__(self):
             if self in self.parent.instances: self.parent.remove(self)
 
         def __init__(self, parent, offset : int, data : bytes | tuple, name : str = None):  
-
-            """
-            #add some documenting later
-            """
-
             self.parent, self.rle,self.offset,self.data = parent, isinstance(data, tuple),offset,data 
             self.size = data[0] if self.rle else len(data)
             self.end = self.offset + self.size
@@ -34,6 +36,9 @@ class ips:
 
 
         def modify(self, **kwargs): 
+            """
+            Modifies all modifiable elements of an instance.
+            """
             
             valid_args = {"offset", "data", "name", "overwrite", "sustain", "merge"}
             if not all(arg in valid_args for arg in kwargs):
@@ -63,7 +68,10 @@ class ips:
     
 
 
-    def check_instance(self, offset, data, name, overwrite, sustain, merge, reference : instance = None) -> dict: 
+    def check_instance(self, offset, data, name, overwrite, sustain, merge, reference : instance = None) -> dict:
+            """
+        Internal method used for validation and instance processing
+            """
             if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `string`")
             if not isinstance(offset, int): raise TypeError("`offset` must be type `int`")
             elif offset < 0: raise ScopeError("`offset` must be a positive integer") 
@@ -113,45 +121,18 @@ class ips:
                 for clash in clashes[sustain:-sustain]: self.remove(clash) 
                 if sustain:  
                     if merge:
-                        start = self.remove(clashes[0])
-                        trailing = self.remove(clashes[-1])
-
-                        sr_data = start["data"][1] if start["rle"] else start["data"][0:1]                      #starting viability 
-                        tr_data = trailing["data"][1] if trailing["rle"] else trailing["data"][0:1]                             #trailing viability 
-
-                        start_rle = True if start["rle"] else start["data"][0:1]*size == start["data"]          #can start be rle 
-                        trail_rle = True if trailing["rle"] else trailing["data"][0:1]*size == trailing["data"] #can trail be rle 
-                        
-                        if rle: 
-                            if start_rle and sr_data:
-                                if trail_rle and tr_data:
-                                    offset = start["offset"] 
-                                    end = trailing["end"]
-                                    data = end-offset, data[1] 
-                                    size = data[0] 
-                                else:
-                                    offset = start["offset"] 
-                                    data = end - offset, data[1] 
-                                    size = data[0] 
-                                    end = offset + size 
-                            elif trail_rle and tr_data:
-                                data = trailing["end"]-offset, data[1]
-                                size = data[0] 
-                            else:data = data[0]*data[1];rle = False
-
-                        if not rle:
-                        
-                            if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                            if trailing.end > end:  
-                                trailing = self.remove(clashes[-1])
-                                if trailing.rle: trailing.data = trailing.data[0]*trailing.data[1];trailing.rle = False
-                                data = start.data[trailing["end"]-offset:trailing]+data 
+                            start = self.remove(clashes[0])
+                            trailing = self.remove(clashes[-1])
+                            if trailing["rle"]: trailing["data"] = trailing["data"][0]*trailing["data"][1];trailing["rle"] = False
+                            if trailing["end"] > end:  
+                                if trailing["rle"]: trailing["data"] = trailing["data"][0]*trailing["data"][1];trailing["rle"] = False
+                                data = start.data[trailing["end"]-offset:]+data 
                                 size = len(data)
                                 end = offset + size
-                            if start.offset < offset:
-                                if start.rle: start.data = start.data[0]*start.data[1];start.rle = False
-                                data = start.data[:offset]+data 
-                                offset = start.offset
+                            if start["offset"] < offset:
+                                if start["rle"]: start["data"] = start["data"][0]*start["data"][1];start["rle"] = False
+                                data = start["data"][:offset]+data 
+                                offset = start["offset"]
                                 size = len(data)
                                 end = offset + size
                     else:
@@ -164,10 +145,7 @@ class ips:
             return {"offset":offset,"data":data,"rle":rle,"size":size,"end":end}
 
 
-    def __init__(self, patch : bytes, legacy : bool = True): 
-        """
-        add some documents later
-        """
+    def __init__(self, patch : bytes = b"PATCHEOF", legacy : bool = True): 
         
         if not isinstance(patch,(bytes, bytearray)): raise TypeError("normalized is not type `bytes` or `bytearray` and therefore cannot be accessed")
         if not isinstance(legacy, bool): raise TypeError("legacy flag must be either True or False")
@@ -193,9 +171,8 @@ class ips:
 
     
     def get(self, discriminator : str | int) -> instance | tuple: 
-        
         """
-        add some documents later
+        Obtains the instances in an ips object by a given discriminator.
         """
 
         if not isinstance(discriminator, (str, int)): raise TypeError("`discriminator` must be type `str` or `int`") 
@@ -206,8 +183,8 @@ class ips:
 
 
     def create(self, offset : int, data : bytes | tuple, **kwargs):  
-        
         """ 
+        Safely create a new instance in an ips object
         """
 
         name = kwargs.get("name", None)
@@ -223,6 +200,9 @@ class ips:
         
     
     def remove(self, discriminator : int | str | instance) -> dict | tuple: 
+        """
+        Safely remove all instances from an ips object by a given discriminator and return object structure
+        """
         
         if not isinstance(discriminator, (int, str, ips.instance)): raise TypeError("`discriminator` must be type `int`, `str` or `ips.instance`") 
 
@@ -241,6 +221,10 @@ class ips:
 
 
     def range(self,start : int = 0, end : int = None) -> bytes: 
+        """
+        Retrieves all existing instances within a specified range of offsets
+        """
+
         if end is None: end = 0xFFFFFF
         if not isinstance(start, int): raise TypeError("`start` must be of type `int`")
         if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
@@ -252,6 +236,9 @@ class ips:
         else: return [ins for ins in self.instances if ins.end > start and ins.offset < end]     
 
     def to_bytes(self) -> bytes:
+        """
+        Processes ips object into native `bytes` object.
+        """
         patch = b"" 
         for ins in self.instances:
             patch += ins.offset.to_bytes(3, "big")
@@ -270,6 +257,9 @@ class ips:
         self.instances[index] = value
 
 def build(base : bytes, target : bytes, legacy : bool = True) -> bytes: 
+    """
+    Compares two files to create a native ips file
+    """
 
     if not isinstance(base, bytes): raise TypeError("`base` must be type `bytes`")  
     if not isinstance(target, bytes): raise TypeError("'target' must be type 'bytes'")  
@@ -317,6 +307,9 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
     return b"PATCH"+patch+b"EOF"
 
 def apply(patch : ips, base : bytes) -> bytes:
+        """
+    Applies an ips object to a file
+        """
         if not isinstance(patch, ips): raise TypeError("IPS given is not of type ips!")
         if not isinstance(base,bytes): raise TypeError("base given is not of type bytes or bytearray!")
 
