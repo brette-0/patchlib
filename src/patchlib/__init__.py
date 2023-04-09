@@ -1,2 +1,2 @@
 from importlib import import_module
-ips = import_module("ipsluna.ips")
+ips = import_module("patchlib.ips")
