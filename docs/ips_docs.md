@@ -102,7 +102,7 @@ def patchfile(modfile,basefile,outfile):
 	with open(outfile,"wb") as f:
 		f.write(patch(get(base),get(mod)))
 ```
-However as `ipsluna` is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions. This is where `iplsuna` exceeds `ips.py`.
+However as `patchlib.ips` is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions. This is where `patchlib.ips` exceeds `ips.py`.
 
 **How does `ips` building work?**
 
