@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>International Patching System &mdash; pathlib 1.0 documentation</title>
+  <title>International Patching System &mdash; patchlib 1.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,7 +17,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="International Patching System" href="../package_docs/ips.html" /> 
+    <link rel="prev" title="patchlib.ips" href="../package_docs/ips.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -29,7 +29,7 @@
           
           
           <a href="../index.html" class="icon icon-home">
-            pathlib
+            patchlib
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -41,11 +41,22 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../package_docs/ips.html">International Patching System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../package_docs/ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">International Patching System</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">International Patching System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-ips">What is IPS?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-does-it-work">How does it work?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-read-apply-one">How to read/apply one?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-do-we-sometimes-use-other-patching-filetypes">Why do we sometimes use other patching filetypes?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-do-we-still-use-ips-if-better-filetypes-exist">Why do we still use <code class="docutils literal notranslate"><span class="pre">ips</span></code> if better filetypes exist?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-should-i-use-patchlib-over-ips-py">Why should I use <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#should-i-make-my-own-ips-handling-tool">Should I make my own <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling tool?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#can-i-contribute-towards-patchlib">Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#is-it-not-better-just-to-make-your-own-filetype">Is it not better just to make your own filetype?</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -54,7 +65,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">pathlib</a>
+          <a href="../index.html">patchlib</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -74,13 +85,220 @@
              
   <section id="international-patching-system">
 <h1>International Patching System<a class="headerlink" href="#international-patching-system" title="Permalink to this heading"></a></h1>
+<section id="what-is-ips">
+<h2>What is IPS?<a class="headerlink" href="#what-is-ips" title="Permalink to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">IPS</span></code> or <code class="docutils literal notranslate"><span class="pre">International</span> <span class="pre">Patching</span> <span class="pre">System</span></code> filetype was created in 1993 to express “diffs” between a controlled <code class="docutils literal notranslate"><span class="pre">base</span></code> file and a resultant <code class="docutils literal notranslate"><span class="pre">target</span></code> file. MS-DOS at this point was the most popular operating system and some versions could not store a <code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">bit</span></code> number due to limitations of the time.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">IPS</span></code> filetype was developed by Japanese “<a class="reference external" href="https://en.wikipedia.org/wiki/ROM_hacking">ROM-Hackers</a>” who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before mainstream ROM-Hacking communities were established such as <a class="reference external" href="https://www.smwcentral.net/">Super Mario World Central</a> which stores the largest archive of <a class="reference external" href="https://www.mariowiki.com/Super_Mario_World">Super Mario World</a> ROM-Hacks, and is the most popular use for this filetype.</p>
+<dl class="simple">
+<dt><strong>Popular IPS tools include:</strong></dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/240/">Lunar IPS</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/1040/">Floating IPS</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/1297/">EWing IPS Patcher</a></p></li>
+</ul>
+</dd>
+</dl>
+<p><a class="reference external" href="https://www.romhacking.net/utilities/240/">Lunar IPS</a> is the most popular, but does not support <code class="docutils literal notranslate"><span class="pre">BPS</span></code> like <a class="reference external" href="https://www.romhacking.net/utilities/1040/">Floating IPS</a> does. All the above are designed for Windows Systems except <a class="reference external" href="https://www.romhacking.net/utilities/1297/">EWing IPS Patcher</a> which should work on any <code class="docutils literal notranslate"><span class="pre">Posix</span></code> System.</p>
+<dl class="simple">
+<dt><strong>As well as historic ones such as:</strong></dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/8/">IPS</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/15/">IPSMac</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/946/">JIPS</a></p></li>
+</ul>
+</dd>
+</dl>
+<p><a class="reference external" href="https://www.romhacking.net/utilities/8/">IPS</a> is designed for 90’s Windows Operating Systems such as MS-DOS, <a class="reference external" href="https://www.romhacking.net/utilities/15/">IPSMac</a> is designed for early Macintosh systems, and <a class="reference external" href="https://www.romhacking.net/utilities/946/">JIPS</a> is simply an <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler designed in Java.</p>
+<dl class="simple">
+<dt><strong>As well as more developmental IPS tools:</strong></dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/1038/">IPS Peek</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/1280/">ips.py</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/578/">Chief-Net IPS</a></p></li>
+</ul>
+</dd>
+</dl>
+<p><a class="reference external" href="https://www.romhacking.net/utilities/1038/">IPS Peek</a> and <a class="reference external" href="https://www.romhacking.net/utilities/578/">Chief-Net IPS</a> both allow selective patching, meaning that parts of the IPS may be excluded or included when patching by the users choice. <a class="reference external" href="https://www.romhacking.net/utilities/1280/">ips.py</a> is a Python <code class="docutils literal notranslate"><span class="pre">ips</span></code> tool, however it is not as versatile as <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code> which is the <em>recommended</em>  Python IPS Module.</p>
+<p><a class="reference external" href="https://www.marcrobledo.com/RomPatcher.js/">ROM Patcher JS</a>, however eradicates the usage of executable “diff” appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being <code class="docutils literal notranslate"><span class="pre">xdelta</span></code> files that use <code class="docutils literal notranslate"><span class="pre">Xdelta3</span></code> format which requires an x64/ARM environment that most web services cannot offer)</p>
+</section>
+<section id="how-does-it-work">
+<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this heading"></a></h2>
+<p>Simple, an IPS file has a static Header reading <code class="docutils literal notranslate"><span class="pre">PATCH</span></code> and a Footer reading <code class="docutils literal notranslate"><span class="pre">EOF</span></code>. The middle of the IPS file is a series of unterminated series of bytes. These “instances” come in two forms in variable size.</p>
+<p><strong>Example of a noRLE Instance:</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">01</span> <span class="pre">23</span> <span class="pre">45</span> <span class="pre">00</span> <span class="pre">05</span> <span class="pre">67</span> <span class="pre">89</span> <span class="pre">AB</span> <span class="pre">CD</span> <span class="pre">EF</span></code></p>
+<p>To make that easier to read, let’s break it down.
+<code class="docutils literal notranslate"><span class="pre">01</span> <span class="pre">23</span> <span class="pre">45</span> <span class="pre">|</span> <span class="pre">00</span> <span class="pre">05</span> <span class="pre">|</span> <span class="pre">67</span> <span class="pre">89</span> <span class="pre">AB</span> <span class="pre">CD</span> <span class="pre">EF</span></code></p>
+<p>The first three bytes is a <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">bit</span></code> number for the  target <code class="docutils literal notranslate"><span class="pre">offset</span></code>, the next two bytes is a <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">bit</span></code> number for the size of the data. The final series of bytes is the data of which it’s length is described by the <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">bit</span></code> size number.</p>
+<p><strong>Example of an RLE Instance:</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">01</span> <span class="pre">23</span> <span class="pre">45</span> <span class="pre">00</span> <span class="pre">00</span> <span class="pre">FF</span> <span class="pre">FF</span> <span class="pre">64</span></code></p>
+<p>The first three bytes are still the <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">bit</span></code> target <code class="docutils literal notranslate"><span class="pre">offset</span></code> however you may notice the <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">bit</span></code> size bytes are equal to zero, indicating that the data is zero in length. However, when the size is equal to zero we treat this is an <code class="docutils literal notranslate"><span class="pre">RLE</span> <span class="pre">flag</span></code> indicating that this <code class="docutils literal notranslate"><span class="pre">instance</span></code> behaves differently.</p>
+<p>We read past the two size bytes and take the next <code class="docutils literal notranslate"><span class="pre">two</span> <span class="pre">bytes</span></code> as a <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">bit</span></code> number describing the <code class="docutils literal notranslate"><span class="pre">hunk</span> <span class="pre">length</span></code> of the <code class="docutils literal notranslate"><span class="pre">RLE</span></code> instance. The last byte is the <code class="docutils literal notranslate"><span class="pre">hunk</span> <span class="pre">data</span></code> and will be repeated until it’s length is equal to the <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">bit</span></code> “hunk length”.</p>
+<p>Spaces in-between offsets beyond the size of the original file size are expected to be zeroes, drastically reducing file size and likely complexity too leading to faster handling. When not storing past the original file the space in between offsets stores the original file contents which are not included in the <code class="docutils literal notranslate"><span class="pre">ips</span></code> for both efficiency and integrity.</p>
+</section>
+<section id="how-to-read-apply-one">
+<h2>How to read/apply one?<a class="headerlink" href="#how-to-read-apply-one" title="Permalink to this heading"></a></h2>
+<p>Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="n">base</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">patch</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="n">patch</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>                     <span class="c1">#trim header and footer</span>
+    <span class="n">changes</span> <span class="o">=</span> <span class="p">{}</span>                            <span class="c1">#dictionary to store diffs</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>                               <span class="c1">#create variable used to track progress in &quot;patch&quot;</span>
+    <span class="k">while</span> <span class="n">count</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="p">):</span>              <span class="c1">#Until we have read the last byte</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span>       <span class="c1">#read next 3 bytes</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">offset</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span><span class="mi">16</span><span class="p">)</span>       <span class="c1">#convert to 24 bit integer</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">3</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>                 <span class="c1">#read next two bytes</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="mf">.16</span><span class="p">)</span>                   <span class="c1">#convert to 16 bit integer</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">size</span><span class="p">:</span>                                        <span class="c1">#if RLE flag set</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">2</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>             <span class="c1">#Acces RLE Length bytes</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span><span class="mi">16</span><span class="p">)</span>               <span class="c1">#convert to 16 bit number</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">2</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>           <span class="c1">#Store RLE instance with offset as key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="n">size</span><span class="p">]</span>
+            <span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>                  <span class="c1">#Store noRLE instance with offset as key</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="n">size</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">offset</span> <span class="ow">in</span> <span class="n">changes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">):</span>                              <span class="c1">#if we are still overwriting</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="n">base</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">):</span><span class="n">offset</span><span class="p">]</span>      <span class="c1">#Copy base until diff start</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">offset</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">))</span>  <span class="c1">#Write zeroes until diff start</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">],</span><span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span><span class="o">*</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">output</span> <span class="o">+=</span> <span class="n">changes</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span>
+    <span class="n">output</span> <span class="o">+=</span> <span class="n">base</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">):]</span>                            <span class="c1">#if we have not wrote up to base, then do so</span>
+    <span class="k">return</span> <span class="n">output</span>
+</pre></div>
+</div>
+<p>The code above accepts two <cite>bytes</cite> objects and will return ` byets` object which could be parsed into a <cite>file</cite> object.  If you only needed this data for patching then you could :</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">patchfile</span><span class="p">(</span><span class="n">modfile</span><span class="p">,</span><span class="n">basefile</span><span class="p">,</span><span class="n">outfile</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">File</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">File</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">patch</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">base</span><span class="p">),</span><span class="n">get</span><span class="p">(</span><span class="n">mod</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>However as <cite>ipsluna</cite> is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions. This is where <cite>iplsuna</cite> exceeds <cite>ips.py</cite>.</p>
+<p><strong>How does `ips` building work?</strong></p>
+<p><cite>ips</cite> constructing is much more detailed than <cite>ips</cite> applying,  as we have to account for the following things:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> files <em>should</em> contain minimal original data.*</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> files <em>should</em> not attempt to make an impossibly large file.**</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> files <em>should</em> prefer <code class="docutils literal notranslate"><span class="pre">rle</span></code> unless setup is too costly.***</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> files <em>must</em> write to the last byte of the new file if bigger , even if zero.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">*</span></code> <em>This does not mean that it won’t work, it just means that you may end up creating an unnecessarily large file that contains potentially sensitive data</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">**</span></code> <em>By default in `patchlib` it is set to `16,777,215 bytes` ( 16.7 MB) however `ips` may reach up to `16,842,750 bytes` by setting `legacy` to  `False`</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">***</span></code> <em>This is merely optimization, no `ips` has to contain `rle` however it should be noted that it is only optimal if the `rle` is of length `9` or higher.</em></p>
+<p>Now that you know the rules, we can begin to create an <code class="docutils literal notranslate"><span class="pre">ips</span></code> file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="n">base</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">target</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="n">patch</span><span class="p">,</span><span class="n">count</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">0</span>
+
+    <span class="c1">#Lambdas for operation viability checks</span>
+    <span class="n">viability</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">offset</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="n">target</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">*</span><span class="n">dist</span> <span class="o">==</span> <span class="n">target</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">dist</span><span class="p">]</span>
+    <span class="n">compare</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">offset</span><span class="p">:</span> <span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span> <span class="o">!=</span> <span class="n">target</span><span class="p">[</span><span class="n">offset</span><span class="p">])</span> <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="k">else</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">rle</span><span class="p">():</span>              <span class="c1">#function for processing rle data</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="mi">9</span>
+        <span class="k">while</span> <span class="n">compare</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="n">length</span><span class="p">)</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">+</span> <span class="n">length</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="ow">and</span> <span class="n">viability</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span> <span class="n">length</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">length</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">norle</span><span class="p">():</span>                    <span class="c1">#function for processing rle unviable data</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">compare</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="n">length</span><span class="p">)</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">+</span> <span class="n">length</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">viability</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="n">length</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">compare</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="n">length</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">))):</span> <span class="n">length</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">length</span>
+
+    <span class="c1">#while we have not compared the final byte</span>
+    <span class="k">while</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+
+        <span class="c1">#if we are comparing the final byte</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">patch</span> <span class="o">+=</span> <span class="n">count</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00\x01</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1">#if we have unncessary data</span>
+        <span class="k">elif</span> <span class="n">base</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="o">==</span> <span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">while</span> <span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="o">==</span> <span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">False</span><span class="p">:</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1">#now that we have our diff</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#determinte rle viability</span>
+            <span class="n">isrle</span> <span class="o">=</span> <span class="n">viability</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">compare</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">))</span>
+
+            <span class="n">length</span> <span class="o">=</span> <span class="p">[</span><span class="n">norle</span><span class="p">,</span><span class="n">rle</span><span class="p">][</span><span class="n">isrle</span><span class="p">]()</span>   <span class="c1">#retrieve length to store</span>
+
+            <span class="c1">#while length is impossible for a singular instance</span>
+            <span class="k">while</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="mh">0xFFFF</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">isrle</span><span class="p">:</span> <span class="n">patch</span> <span class="o">+=</span> <span class="n">count</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00\x00\xff\xff</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="n">patch</span> <span class="o">+=</span> <span class="n">count</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\xff\xff</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="mh">0xFFFF</span><span class="p">]</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mh">0xFFFF</span>
+                <span class="n">length</span> <span class="o">-=</span> <span class="mh">0xFFFF</span>
+
+            <span class="c1">#if data was not a multiple of 0xFFFF</span>
+            <span class="k">if</span> <span class="n">length</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">isrle</span><span class="p">:</span> <span class="n">patch</span> <span class="o">+=</span> <span class="n">count</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00\x00</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">length</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="n">patch</span> <span class="o">+=</span> <span class="n">count</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="n">length</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span><span class="o">+</span><span class="n">target</span><span class="p">[</span><span class="n">count</span><span class="p">:</span><span class="n">count</span><span class="o">+</span><span class="n">length</span><span class="p">]</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="n">length</span>
+
+    <span class="c1">#return data</span>
+    <span class="k">return</span> <span class="sa">b</span><span class="s2">&quot;PATCH&quot;</span><span class="o">+</span><span class="n">patch</span><span class="o">+</span><span class="sa">b</span><span class="s2">&quot;EOF&quot;</span>
+</pre></div>
+</div>
+<p>This is the <em>best</em> <code class="docutils literal notranslate"><span class="pre">ips</span></code> construction code in terms of minimal output and is very optimized.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">makepatch</span><span class="p">(</span><span class="n">basefile</span><span class="p">,</span><span class="n">targetfile</span><span class="p">,</span><span class="n">outfile</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">File</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">File</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">build</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">basefile</span><span class="p">),</span><span class="n">get</span><span class="p">(</span><span class="n">targetfile</span><span class="p">)))</span>
+</pre></div>
+</div>
+</section>
+<section id="why-do-we-sometimes-use-other-patching-filetypes">
+<h2>Why do we sometimes use other patching filetypes?<a class="headerlink" href="#why-do-we-sometimes-use-other-patching-filetypes" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> for example, uses variable width offsets, and instead of immediate replacement it uses “actions” to move the data and perform selective “range” overwrites in order to achieve a goal with <em>variable</em> scope. <code class="docutils literal notranslate"><span class="pre">ips</span></code> has a reach of <code class="docutils literal notranslate"><span class="pre">16,842,750</span> <span class="pre">bytes</span></code>, however a true legal <code class="docutils literal notranslate"><span class="pre">ips</span></code> could not write beyond the <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">bit</span></code> maximum and therefore the maximum reach is truly <code class="docutils literal notranslate"><span class="pre">16,777,215</span> <span class="pre">bytes</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ips</span></code> also is horribly inefficient at patching large files, some files may contain duplicates of the base code, which is not just horribly inefficient but also provides a security risk for the original file contents.  A simple <code class="docutils literal notranslate"><span class="pre">ips</span></code> integrity checker could be constructed to compare base contents to patch contents to see what resemblance there is .</p>
+<p>In conclusion, <code class="docutils literal notranslate"><span class="pre">ips</span></code> is designed for an older generation of consoles that were small and simplistic, as the scope of technology gradually increases we may see <code class="docutils literal notranslate"><span class="pre">bps</span></code> become irrelevant. Currently, and for much time, it is irrational to assume that <code class="docutils literal notranslate"><span class="pre">bps</span></code> can be made redundant however as it can reach up to a theoretical <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">exabytes</span></code> in reach.</p>
+</section>
+<section id="why-do-we-still-use-ips-if-better-filetypes-exist">
+<h2>Why do we still use <code class="docutils literal notranslate"><span class="pre">ips</span></code> if better filetypes exist?<a class="headerlink" href="#why-do-we-still-use-ips-if-better-filetypes-exist" title="Permalink to this heading"></a></h2>
+<p>Easiest question of them all, <code class="docutils literal notranslate"><span class="pre">ips</span></code> was just there when it needed to be. Because of <code class="docutils literal notranslate"><span class="pre">ips</span></code>’s common usage and popularity when ROMhacking was more niche than it was the filetype has been the face of early ROMhacking, <code class="docutils literal notranslate"><span class="pre">ips</span></code> is actually quite space efficient for most of these hacks, it fit’s its scope perfectly.</p>
+<p>In some cases, you may opt for <code class="docutils literal notranslate"><span class="pre">bps</span></code> over <code class="docutils literal notranslate"><span class="pre">ips</span></code> if the scope of the project would benefit from it, however for minor edits within the size of the base file there is commonly zero reason not to choose <code class="docutils literal notranslate"><span class="pre">ips</span></code> unless the file you are modding requires a higher reach.</p>
+</section>
+<section id="why-should-i-use-patchlib-over-ips-py">
+<h2>Why should I use <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code>?<a class="headerlink" href="#why-should-i-use-patchlib-over-ips-py" title="Permalink to this heading"></a></h2>
+<p>The main reason you should choose <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code> is because <em>it does what ***every**</em> other <strong>advanced</strong> patching tool does*. After being passed the raw contents of an <code class="docutils literal notranslate"><span class="pre">ips</span></code> or initialising a blank canvas, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> offers <strong>total</strong> control of the <code class="docutils literal notranslate"><span class="pre">ips</span></code>.  Each instance (diff) has the <code class="docutils literal notranslate"><span class="pre">size</span></code>, <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">rle</span> <span class="pre">flag</span></code>, and <code class="docutils literal notranslate"><span class="pre">diff-reach</span></code> stored in the <code class="docutils literal notranslate"><span class="pre">instance</span></code> class as well as a <code class="docutils literal notranslate"><span class="pre">name</span></code> attribute which can be used to annotate an <code class="docutils literal notranslate"><span class="pre">ips</span></code>.</p>
+<p>The benefit to all of this is that now we can <em>smartly</em> interact with the instances, we can access them with a variety of functions such as <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">range``or</span> <span class="pre">by</span> <span class="pre">accessing</span> <span class="pre">the</span> <span class="pre">``instances</span></code> attribute within the <code class="docutils literal notranslate"><span class="pre">ips</span></code> class which stores each <code class="docutils literal notranslate"><span class="pre">instance</span></code> by order of <code class="docutils literal notranslate"><span class="pre">offset</span></code>. We can also modify the individual <code class="docutils literal notranslate"><span class="pre">instance</span></code> with the <code class="docutils literal notranslate"><span class="pre">modify</span></code> method.</p>
+<p>Moreover, the project is being actively worked on - and updates and new features should be expected. The code exceeds all known IPS tools and is not even at a release build yet, and it has full docs on the <a class="reference external" href="https://pypi.org/project/patchlib/">PyPI</a> and active developers in immediate contact on the <a class="reference external" href="https://discord.com/invite/3DYCru4dCV">Discord</a>!</p>
+</section>
+<section id="should-i-make-my-own-ips-handling-tool">
+<h2>Should I make my own <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling tool?<a class="headerlink" href="#should-i-make-my-own-ips-handling-tool" title="Permalink to this heading"></a></h2>
+<p>There is very minimal reason to do this. As it stands, even when <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetypes are being manipulated at a deep level, the tools provided are often not even fully used as rarely does the user exceed common <code class="docutils literal notranslate"><span class="pre">building</span></code> and <code class="docutils literal notranslate"><span class="pre">applying</span></code>. There is generally a surplus of tools, should you create your own <code class="docutils literal notranslate"><span class="pre">ips</span></code> tool there should be a reason for this, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>’s existence is to provide total control in a <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">JIPS</span></code> is forgivable as it runs in a Java runtime, meaning that it can run on devices that do not support <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3</span></code>. Because <code class="docutils literal notranslate"><span class="pre">JIPS</span></code> uses <code class="docutils literal notranslate"><span class="pre">Java</span></code>, the whole ideology being that it can run in <em>any</em> environment, this tool is very helpful to those who do not have an Operating System which any dedicated tool can support. The same <em>would</em> go for <code class="docutils literal notranslate"><span class="pre">ips.py</span></code> if <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> did not render it redundant.
+If you wish to make a tool, ensure that the benefits are not found immediately in someone else’s tools alone.  Once you can confirm there is a point to doing this baring scope, usability and cause, making an <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler makes complete sense.</p>
+</section>
+<section id="can-i-contribute-towards-patchlib">
+<h2>Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?<a class="headerlink" href="#can-i-contribute-towards-patchlib" title="Permalink to this heading"></a></h2>
+<p>Yes! <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> GitHub allows for forks to be made and anyone with some <code class="docutils literal notranslate"><span class="pre">Python</span></code> skill can be included in the Project! In fact, there are many elements of the project left <strong>totally</strong> untouched that you could begin working on! If you are interested feel free in contacting on the <a class="reference external" href="https://discord.com/invite/3DYCru4dCV">Discord</a>!</p>
+</section>
+<section id="is-it-not-better-just-to-make-your-own-filetype">
+<h2>Is it not better just to make your own filetype?<a class="headerlink" href="#is-it-not-better-just-to-make-your-own-filetype" title="Permalink to this heading"></a></h2>
+<p>This should be overall somewhat discouraged for these reasons:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> is standardized, people may not want to use your files/tools</p></li>
+<li><p>It is quite likely that <code class="docutils literal notranslate"><span class="pre">bps</span></code> could solve this, people <em>will</em> use that instead</p></li>
+<li><p>It creates some sort of proprietary sense to it, which may deter users.</p></li>
+<li><p>If tool sharing is too slow for demand, users may share original files</p></li>
+</ul>
+<p>If people do not want to use your tools then the project’s popularity will be stunted, if people construct a <code class="docutils literal notranslate"><span class="pre">bps</span></code> between the base and result file then nobody will feel obliged to use <em>your format or tool</em>. In the world of common base files it is natural to assume a universal format for manipulation, for this we opt for universal filetypes, limiting control only works for immediate distribution.</p>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../package_docs/ips.html" class="btn btn-neutral float-left" title="International Patching System" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../package_docs/ips.html" class="btn btn-neutral float-left" title="patchlib.ips" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>International Patching System &mdash; pathlib 1.0 documentation</title>
+  <title>patchlib.ips &mdash; patchlib 1.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -30,7 +30,7 @@
           
           
           <a href="../index.html" class="icon icon-home">
-            pathlib
+            patchlib
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -42,7 +42,12 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">International Patching System</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ips-handling">IPS Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exceptions">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
 <ul>
@@ -55,7 +60,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">pathlib</a>
+          <a href="../index.html">patchlib</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -63,7 +68,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">International Patching System</li>
+      <li class="breadcrumb-item active"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/package_docs/ips.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -73,8 +78,114 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="international-patching-system">
-<h1>International Patching System<a class="headerlink" href="#international-patching-system" title="Permalink to this heading"></a></h1>
+  <section id="patchlib-ips">
+<h1><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code><a class="headerlink" href="#patchlib-ips" title="Permalink to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code> is the best <code class="docutils literal notranslate"><span class="pre">ips</span></code> file handler out there, while slower than it’s C++ counterparts. <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> can boast that it offers</p>
+<ul class="simple">
+<li><p>Total control of every byte in the IPS</p></li>
+<li><p>Serializable objects for sharing/extended use</p></li>
+<li><p>Produces the <em>smallest</em> <code class="docutils literal notranslate"><span class="pre">ips</span></code> files of any <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler</p></li>
+<li><p>Lightweight filesize sitting only at <code class="docutils literal notranslate"><span class="pre">17kb</span></code></p></li>
+<li><p>extendable scope to <code class="docutils literal notranslate"><span class="pre">0x100FFFE</span></code>, or standard <code class="docutils literal notranslate"><span class="pre">0xFFFFFF</span></code></p></li>
+</ul>
+<section id="ips-handling">
+<h2>IPS Handling<a class="headerlink" href="#ips-handling" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib</span></code> is useful for <em>all</em> elements of <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling, even some that are likely to be left unused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">patchlib.ips</span> <span class="kn">import</span> <span class="o">*</span>          <span class="c1">#import ips library</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;EXTRA MARIO BROS.ips&quot;</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">mod</span> <span class="o">=</span> <span class="n">ips</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>               <span class="c1">#construct `ips` object from file</span>
+</pre></div>
+</div>
+<p>We pass the <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object into the constructor, and can specify whether or not this <code class="docutils literal notranslate"><span class="pre">ips</span></code> should comply to <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">bit</span></code> standards. Set to <code class="docutils literal notranslate"><span class="pre">True</span></code> by default the optional positional arg <code class="docutils literal notranslate"><span class="pre">legacy</span></code> indicates whether or no the <code class="docutils literal notranslate"><span class="pre">ips</span></code> should be allowed to write up to <code class="docutils literal notranslate"><span class="pre">0x100FFFE</span></code> which is the <code class="docutils literal notranslate"><span class="pre">32bit</span></code> limit of <code class="docutils literal notranslate"><span class="pre">ips</span></code>. Since an <code class="docutils literal notranslate"><span class="pre">ips</span></code> is just a series of <code class="docutils literal notranslate"><span class="pre">instances</span></code>, the methods within the <code class="docutils literal notranslate"><span class="pre">ips</span></code> class are just for <code class="docutils literal notranslate"><span class="pre">instance</span></code> handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#retrieve multiple offsets within a range</span>
+
+<span class="n">header</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>          <span class="c1">#here we retrieve all instances up to the 16th byte</span>
+<span class="n">PRG</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mh">0x8010</span><span class="p">)</span>          <span class="c1">#here we retrieve all instances from 16 to 0x8010</span>
+<span class="n">CHR</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mh">0x8010</span><span class="p">)</span>             <span class="c1">#here we retrieve all instances from 0x8010 to the end</span>
+
+<span class="c1">#retrieve an instance from offset, or many with a shared or unique name</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1622</span><span class="p">)</span>                                       <span class="c1">#retrieve instance starting at offset 1622</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unnamed instance at 1984 - 2010 | 26&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The default name on an <code class="docutils literal notranslate"><span class="pre">instance</span></code> is <code class="docutils literal notranslate"><span class="pre">unnamed</span> <span class="pre">instance</span> <span class="pre">at</span></code> to signify that it was assigned a name during construction or modification, then we get the <code class="docutils literal notranslate"><span class="pre">offset</span></code> to the <code class="docutils literal notranslate"><span class="pre">end</span></code> describing it’s range including it’s <code class="docutils literal notranslate"><span class="pre">size</span></code> at the end. The names do not affect how an`instance` works, it merely aids readability of the file.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">instance``may</span> <span class="pre">also</span> <span class="pre">be</span> <span class="pre">created</span> <span class="pre">and</span> <span class="pre">removed</span> <span class="pre">from</span> <span class="pre">an</span> <span class="pre">``ips</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#This code will insert the bytearray b&quot;Example&quot; at 1234</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;Example&quot;</span><span class="p">)</span>
+
+<span class="c1">#or with rle...</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;E&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>If the space you are attempting to write data is occupied by another <cite>instance</cite> you can use the optional <cite>kwarg</cite> <cite>overwrite</cite> which will overwrite existing <cite>instances</cite> to make space for the new <cite>instance</cite></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;Example&quot;</span><span class="p">,</span> <span class="n">override</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above example we keep as much of the non-clashing <cite>instance</cite> data within the clashing <cite>instance</cite>. This is due to the optional <cite>kwarg</cite> <cite>sustain</cite> default value being <cite>True</cite>. If the data <em>should not</em> be sustained, then this can be executed like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;Example&quot;</span><span class="p">,</span> <span class="n">override</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sustain</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However, in most cases <code class="docutils literal notranslate"><span class="pre">sustain</span></code> will likely be used, furthermore it may also be the case that the overwriting data may exist to modify existing instance data in which case it may make sense to use the optional <code class="docutils literal notranslate"><span class="pre">kwarg</span></code> <code class="docutils literal notranslate"><span class="pre">merge</span></code> which connects the new <code class="docutils literal notranslate"><span class="pre">instance</span></code> with any possible consecutive <code class="docutils literal notranslate"><span class="pre">instance</span></code>. By default <code class="docutils literal notranslate"><span class="pre">merge</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> and is only usable when <code class="docutils literal notranslate"><span class="pre">sustain</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;Example&quot;</span><span class="p">,</span> <span class="n">override</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If an <code class="docutils literal notranslate"><span class="pre">instance</span></code> needs to be removed, we have the <code class="docutils literal notranslate"><span class="pre">remove</span></code> function. This function does more than just remove an <code class="docutils literal notranslate"><span class="pre">instance</span></code> however, it returns a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of every <code class="docutils literal notranslate"><span class="pre">attribute</span></code> in the <code class="docutils literal notranslate"><span class="pre">instance</span></code>. Further, if the <code class="docutils literal notranslate"><span class="pre">discriminator</span></code> is a string and we have multiple <code class="docutils literal notranslate"><span class="pre">instances</span></code> it will remove them all and return a <code class="docutils literal notranslate"><span class="pre">tuple</span></code> storing all <code class="docutils literal notranslate"><span class="pre">instances</span></code> in ascending order by <code class="docutils literal notranslate"><span class="pre">offset</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dict_of_data</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>                                                                                     <span class="c1">#removing by offset</span>
+<span class="n">tuple_of_datasets</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;unnamed instance at 1984 - 2010 | 26&quot;</span><span class="p">)</span>      <span class="c1">#removing by name</span>
+</pre></div>
+</div>
+<p>Other ways to access the <code class="docutils literal notranslate"><span class="pre">instances</span></code> in an <code class="docutils literal notranslate"><span class="pre">ips</span></code> may be index specification or slices, or using the <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method with <code class="docutils literal notranslate"><span class="pre">for</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ins</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">instances</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">instances</span><span class="p">[</span><span class="mi">20</span><span class="p">:</span><span class="mi">30</span><span class="p">]</span>
+
+<span class="n">ins</span> <span class="o">=</span> <span class="p">[</span><span class="n">ins</span> <span class="k">for</span> <span class="n">ins</span> <span class="ow">in</span> <span class="n">mod</span> <span class="k">if</span> <span class="n">ins</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mod</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                <span class="n">ins</span> <span class="o">=</span> <span class="n">i</span> <span class="p">;</span> <span class="k">break</span>
+</pre></div>
+</div>
+<p>Once the necessary jobs regarding the <code class="docutils literal notranslate"><span class="pre">ips</span></code> is complete, you can then create a bytes object for it to be wrote to a file with <code class="docutils literal notranslate"><span class="pre">ips.to_bytes()</span></code>.</p>
+<p>## Instance Handling
+The “Total” control of <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code> is as advertised, the <code class="docutils literal notranslate"><span class="pre">instance</span></code> class has one method excluding initialization, which is <code class="docutils literal notranslate"><span class="pre">modify</span></code> which acts just like <code class="docutils literal notranslate"><span class="pre">ips.create</span></code> but <code class="docutils literal notranslate"><span class="pre">offset</span></code> and <code class="docutils literal notranslate"><span class="pre">data</span></code> are now optional as they have been predefined at least once.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reference</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
+<span class="n">reference</span><span class="o">.</span><span class="n">modify</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;f&quot;</span><span class="p">),</span> <span class="n">overwrite</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">reference</span><span class="o">.</span><span class="n">modify</span><span class="p">(</span><span class="n">offset</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;New Name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="exceptions">
+<h2>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ScopeError</span></code>
+This <code class="docutils literal notranslate"><span class="pre">Exception</span></code> will raise when the task is infeasible given the limitations of <code class="docutils literal notranslate"><span class="pre">ips</span></code> as a system.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OffsetError`</span></code>
+This <code class="docutils literal notranslate"><span class="pre">Exception</span></code> will raise when the task demands an impossible offset during creation or modification.</p></li>
+</ul>
+</section>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">apply</span></code> method takes an <code class="docutils literal notranslate"><span class="pre">ips</span></code> object and a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object for the base file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Super Mario Bros. (World).nes&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;EXTRA MARIO BROS.ips&quot;</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">ips</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;EXTRA MARIO BROS.nes&quot;</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">build</span></code> method takes two <code class="docutils literal notranslate"><span class="pre">bytes</span></code> objects, one for the base file and one for the target file. It also takes an optional positional arg <code class="docutils literal notranslate"><span class="pre">legacy</span></code> which indicates if we should allow writes up to <code class="docutils literal notranslate"><span class="pre">0x100FFFE</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Super Mario Bros.nes&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;My Cool Mario ROMhack.nes&quot;</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;My Cool Mario ROMhack.ips&quot;</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">build</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">target</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 

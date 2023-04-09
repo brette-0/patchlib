@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'pathlib'
+project = 'patchlib'
 copyright = '2023, BrettefromNesUniverse'
 author = 'BrettefromNesUniverse'
 release = '1.0'
@@ -26,3 +26,5 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+highlight_language = "python"
