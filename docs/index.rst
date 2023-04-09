@@ -1,4 +1,5 @@
 .. image:: logo.png
+.. title:: patchlib
 
 ``patchlib`` is a library of tools for total control of the fundamental
 elements of each ``patch`` filetype, and is split into several packages,
