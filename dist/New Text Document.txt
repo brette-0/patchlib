@@ -1,2 +1,0 @@
-pip install "patchlib-1.1.tar.gz"
-echo off

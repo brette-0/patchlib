@@ -8,11 +8,11 @@ each documented in detail in this repository, and installed on:
 
 Or can be installed with:
 
-======================== =========================
-Windows                  Posix / Unix
-======================== =========================
-``pip install patchlib`` ``pip3 install patchlib``
-======================== =========================
+============================ =============================
+Windows                      Posix / Unix
+============================ =============================
+``pip install get.patchlib`` ``pip3 install get.patchlib``
+============================ =============================
 
 -  *Intended for Python 3.7 and above*
 -  Uses

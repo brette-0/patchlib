@@ -4,5 +4,15 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "get.patchlib"
-authors = [{name = "BretteFromNesUniverse"}]
+version = "1.1"
+description = "Patch file handler"
+authors = [{ name = "BretteFromNesUniverse"}]
+requires-python = ">=3.7"
 dynamic = ["version", "description"]
+
+[project.urls]
+Homepage = "https://github.com/BrettefromNesUniverse/patchlib"
+Bug Tracker = "https://github.com/BrettefromNesUniverse/patchlib/issues"
+
+[tool.flit.metadata]
+module = "patchlib"
