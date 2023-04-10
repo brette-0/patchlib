@@ -26,5 +26,3 @@ Or can be installed with:
 Using `import patchlib` will install all packages with the `importlib` module. `patchlib` provides no context abundant methods and relies on the package being specified.
 
 `Luna` serialized class handling may be implemented at a later point in time once enough of the crucial patch filetypes have been completed.
-
-[docs](https://github.com/BrettefromNesUniverse/patchlib/tree/main/docs) applies only to the ***[working build](https://pypi.org/project/patchlib/)** and therefore may not reflect the **[open source versions](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/).*** Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.
