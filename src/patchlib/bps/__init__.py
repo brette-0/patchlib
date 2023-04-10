@@ -2,6 +2,8 @@
 experimental alpha bps handler
 """
 
+__version__ = "0.1"
+
 def encode(data : int) -> bytearray:  #create function return bytearray, takes int
     """
     encodes standard 64bit int, may be higher, into variable width beat bytearray

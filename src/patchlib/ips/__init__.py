@@ -1,6 +1,7 @@
 """
 IPS filetype handler
 """
+__version__ = "1.0"
 
 class ScopeError(Exception): 
     """
