@@ -5,7 +5,7 @@ Or can be installed with:
 
 |Windows|Posix / Unix|
 |--|--|
-|`pip install get.patchlib`  | `pip3 install get.patchlib` |
+|`pip install get_patchlib`  | `pip3 install get_patchlib` |
  - *Intended for Python 3.7 and above*
  - Uses [`importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
  - Currently can only use `ips` files.

@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+get_patchlib.egg-info/PKG-INFO
+get_patchlib.egg-info/SOURCES.txt
+get_patchlib.egg-info/dependency_links.txt
+get_patchlib.egg-info/entry_points.txt
+get_patchlib.egg-info/top_level.txt

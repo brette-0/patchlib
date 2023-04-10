@@ -1,18 +1,12 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools>=58.0.3", "wheel>=0.37.0"]
 
-[project]
-name = "get.patchlib"
-version = "1.1"
+[tool.poetry]
+name = "get_patchlib"
+version = "1.0"
 description = "Patch file handler"
 authors = [{ name = "BretteFromNesUniverse"}]
-requires-python = ">=3.7"
-dynamic = ["version", "description"]
+license = "MIT"
 
-[project.urls]
-Homepage = "https://github.com/BrettefromNesUniverse/patchlib"
-Bug Tracker = "https://github.com/BrettefromNesUniverse/patchlib/issues"
-
-[tool.flit.metadata]
-module = "patchlib"
+[tool.poetry.dependencies]
+python = ">=3.7"

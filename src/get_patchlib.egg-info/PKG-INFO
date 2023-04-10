@@ -1,3 +1,16 @@
+Metadata-Version: 2.1
+Name: get-patchlib
+Version: 1.1
+Summary: Patch file handler
+Home-page: https://github.com/BrettefromNesUniverse/patchlib
+Author: BrettefromNesUniverse
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
 # `patchlib`
 `patchlib`  is a library of tools for total control of the fundamental elements of each `patch` filetype, and is split into several packages, each documented in detail in this repository, and installed on: [PyPi]( https://pypi.org/project/patchlib/)
 
