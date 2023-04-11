@@ -9,7 +9,7 @@
 project = 'patchlib'
 copyright = '2023, BrettefromNesUniverse'
 author = 'BrettefromNesUniverse'
-release = '1.0'
+release = '1.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
