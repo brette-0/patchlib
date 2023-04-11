@@ -1,1 +1,5 @@
-
+.vscode
+dist
+docs/.vs 
+docs/.vscode 
+get_patchlib.egg-info
