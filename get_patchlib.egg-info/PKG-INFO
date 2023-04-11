@@ -3,7 +3,7 @@ Name: get-patchlib
 Version: 1.1
 Summary: Patch file handler
 Home-page: https://github.com/BrettefromNesUniverse/patchlib
-Author: ({BrettefromNesUniverse})
+Author: BrettefromNesUniverse
 License: MIT
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License

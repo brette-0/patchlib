@@ -3,3 +3,4 @@ dist
 docs/.vs 
 docs/.vscode 
 get_patchlib.egg-info
+src/get_patchlib.egg-info
