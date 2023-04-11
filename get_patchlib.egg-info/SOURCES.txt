@@ -1,8 +1,0 @@
-LICENSE
-README.md
-pyproject.toml
-setup.py
-get_patchlib.egg-info/PKG-INFO
-get_patchlib.egg-info/SOURCES.txt
-get_patchlib.egg-info/dependency_links.txt
-get_patchlib.egg-info/top_level.txt
