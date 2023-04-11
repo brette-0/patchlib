@@ -35,6 +35,7 @@ jobs:
         path: |
           ~/.cache/pip
           ~/.cache/pre-commit
+          pip cache purge
           key: ${{ runner.os }}-cache-${{ hashFiles('**/**') }}
           restore-keys: |
             ${{ runner.os }}-cache-
