@@ -10,7 +10,7 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/BrettefromNesUniverse/patchlib",
-    packages=find_packages(),
+    packages=find_packages(exclude=['docs']),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
