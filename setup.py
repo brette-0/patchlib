@@ -4,8 +4,7 @@ setup(
     
     name="get_patchlib",
     module = "patchlib",
-    version="1.1",
-    author="BrettefromNesUniverse",
+    version="1.0",
     description="Patch file handler",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
