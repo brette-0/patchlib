@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
+    
     name="get_patchlib",
     module = "patchlib",
     version="1.1",
@@ -17,4 +18,10 @@ setup(
     ],
     python_requires=">=3.7",
     license="MIT",
+    extras_require={
+    "docs": [
+        "sphinx",
+        # other documentation dependencies
+    ]
+}
 )
