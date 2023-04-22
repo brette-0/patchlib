@@ -94,30 +94,38 @@ def apply(patch: bytes, source: bytes) -> bytes:
     Applies BPS Patch to source file
     """
 
-    target = bytearray(source)
+    target = bytearray(source);outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
     source_checksum, target_checksum, patch_checksum = [patch[i:i+4] for i in range(-12, 0, 4)];patch = patch[4:-12]
     trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
 
-    source_size = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
-    target_size = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
-    metadata_size = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+    sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
+    targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
+    metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
 
-    if metadata_size:
-        metadata = patch[:metadata_size];patch = patch[metadata_size:]  # Gather Metadata as bytearray (should be xml | may not be)
-
-
-    def source_read() -> None:
-        pass #nonlocal some variables and perform some function
-
-    def target_read() -> None:
-        pass #nonlocal some variables and perform some function
+    if metadataSize:
+        metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
 
 
-    def source_copy() -> None:
-        pass #nonlocal some variables and perform some function
+    def SourceRead() -> None:
+        nonlocal length,source,target,outputOffset                                                      #nonlocal some crucial pre-determiened values
+        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]             #copy data from source to same area in target
+        outputOffset += length                                                                          #read past data
 
-    def target_copy() -> None:
-        pass #nonlocal some variables and perform some function
+    def TargetRead() -> None:
+        nonlocal length #nonlocal some variables and perform some function
+
+
+    def SourceCopy() -> None:
+        nonlocal length #nonlocal some variables and perform some function
+
+    def TargetCopy() -> None:
+        nonlocal length #nonlocal some variables and perform some function
+
+    while len(patch):
+        operation = decode(patch);patch = trim() 
+        length = (operation >> 2) + 1  
+        (SourceRead,TargetRead,SourceCopy,TargetCopy)[operation & 3]()
+        
 
     #Here we shall haev the code to loop instructions
 
