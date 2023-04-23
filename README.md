@@ -8,13 +8,14 @@ Or can be installed with:
 |`pip install get_patchlib`  | `pip3 install get_patchlib` |
  - *Intended for Python 3.7 and above*
  - Uses [`importlib`](https://docs.python.org/3/library/importlib.html) for complete importing
- - Currently can only use `ips` files.
+ - Uses [`zlib`](https://docs.python.org/3/library/zlib.html) for checksum comparison
+ - Currently can only use `ips` files. *(`bps` is currently in-dev)*
  - [Interactive Docs](https://patchlib.readthedocs.io)
 
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
-|IPS|[`patchlib.ips`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py)| [patchlib.ips](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/patchlib.ips_docs.md) |0.9|16.464 KB |[IPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/ips_docs.md) |
-|BPS|[`patchlib.bps`]()|Not yet|alpha|5.85 KB|None
+|IPS|[`patchlib.ips`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py)| [patchlib.ips](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/package_docs/patchlib.ips_docs.md) |0.9|16.464 KB |[IPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/filetype_docs/ips_docs.md) |
+|BPS|[`patchlib.bps`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/bps/__init__.py)|Not yet|0.3|6.78 KB|None
 |Xdelta|[`patchlib.xdelta`]()|Not yet|None|None|None
 |PPF|[`patchlib.ppf`]()|Not yet|None|None|None
 |UPS|[`patchlib.ups`]()|Not yet|None|None|None
