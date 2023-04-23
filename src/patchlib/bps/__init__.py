@@ -1,8 +1,11 @@
 """
-experimental alpha bps handler
+in-dev bps beta
 """
 
 __version__ = "0.3"
+
+
+from zlib import crc32
 
 def encode(number : int) -> bytes:
     """
@@ -53,15 +56,15 @@ class bps:
     def __init__(self, patch : bytes):
 
         self.actions = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-        source_checksum, target_checksum, patch_checksum = [patch[i:i+4] for i in range(-12, 0, 4)];patch = patch[4:-12]
+        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
         trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
 
-        sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
-        targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
-        metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+        self.sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
+        self.targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
+        self.metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
 
-        if metadataSize:
-            metadata = patch[:metadataSize];patch = patch[metadataSize:]   # Gather Metadata as bytearray (should be xml | may not be)
+        if self.metadataSize:
+            self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]   # Gather Metadata as bytearray (should be xml | may not be)
 
         while len(patch):
             operation = decode(patch[:16]);patch = trim() 
@@ -84,18 +87,21 @@ class bps:
 
 
 
-def apply(patch: bytes, source: bytes) -> bytes: 
+def apply(patch: bytes, source: bytes, checks : bool = True) -> bytes: 
     """
     Applies BPS Patch to source file
     """
 
     target = bytearray(source);outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-    source_checksum, target_checksum, patch_checksum = [patch[i:i+4] for i in range(-12, 0, 4)];patch = patch[4:-12]
+    source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
+    if not all(crc32(component) == int(goal.hex(),16) for component,goal in ((patch,patch_checksum),(source,source_checksum))) and checks: raise ValueError("Sourcefile or Patchfile corrupt")
     trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
 
     sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
     targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
     metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+
+    if len(source) != sourceSize and checks: raise ValueError("Sourcefile is of unacceptable filesize")
 
     if metadataSize:
         metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
@@ -115,15 +121,15 @@ def apply(patch: bytes, source: bytes) -> bytes:
         
 
     def source_copy() -> None:
-        nonlocal length, outputOffset, sourceRelativeOffset, patch
+        nonlocal length, outputOffset, sourceRelativeOffset, patch, trim
         data = decode(patch[:16]);patch = trim() 
         sourceRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
         target[outputOffset:outputOffset+length] = source[sourceRelativeOffset:sourceRelativeOffset+length] 
         outputOffset += length;sourceRelativeOffset += length
 
 
-    def target_coy() -> None:
-        nonlocal length, outputOffset, targetRelativeOffset, patch
+    def target_copy() -> None:
+        nonlocal length, outputOffset, targetRelativeOffset, patch, trim
         data = decode(patch[:16]);patch = trim() 
         targetRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
         target[outputOffset:outputOffset+length] = source[targetRelativeOffset:targetRelativeOffset+length] 
@@ -132,9 +138,7 @@ def apply(patch: bytes, source: bytes) -> bytes:
     while len(patch):
         operation = decode(patch[:16]);patch = trim() 
         length = (operation >> 2) + 1  
-        (source_read,target_read,source_copy,target_coy)[operation & 3]()
+        (source_read,target_read,source_copy,target_copy)[operation & 3]()
         
-
-    #Here we shall haev the code to loop instructions
 
     return target, source_checksum, target_checksum, patch_checksum, metadata
