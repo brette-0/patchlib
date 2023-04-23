@@ -1,0 +1,232 @@
+## Brette's Consumable BPS Filetype Docs
+
+### What is BPS?
+
+`bps` was designed by Emulator enthusiast [byuu]() who, with this solution, created the standard for patch files in the ROMhacking community. While in truth a successor to [`ups`](), `bps` offers a level of sophisticated versatility that was not needed when `ips` was suitable for known ROMhacking scopes.
+
+`bps` is designed for mainly three reasons, the first being that `ips` had a soft upperlimit of about `16 MB` and therefore larger games would be unmodifiable if it were not for a successor. Secondly, `bps` does not *need* to store any `source` data beyond original file offset as it refers to `source` during patching. Finally, `bps` offers more efficient patching with incredibly low filesizes.
+
+**Popular BPS tools include:**
+
+ - [beat]()
+ - Tool 2
+ - Tool 3
+
+[Tool Overview]
+ 
+ **As well as historic ones such as:**
+ 
+- Tool 4
+- Tool 5
+- Tool 6
+ 
+[Tool Overview]
+
+ **As well as more developmental BPS tools:**
+ 
+- Tool 7
+- Tool 8
+- Tool 9
+ 
+[Tool Overview]
+
+[ROM Patcher JS](https://www.marcrobledo.com/RomPatcher.js/), however eradicates the usage of executable "diff" appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being `xdelta` files that use `Xdelta3` format which requires an x64/ARM environment that most web services cannot offer)
+
+### How does it work?
+
+In order to understand `bps` adequatly we need to understand the concept of `variable-width encoding` and how it works with `bps`. `variable-width encoding` is where a value (in our case numerical) is stored split into `7 bit` segments in which the MSB of said byte is an indicator to stop reading data. The result of reading through bytes until the MSB is set is our `decoded` value.
+
+**`variable-width encoding`**
+```python
+def encode(number : int) -> bytes:
+    """
+	Convert number into variable-width encoded bytes
+    """
+
+    if not isinstance(number,int): raise TypeError("Number data must be integer")
+    if number < 0: raise ValueError("Cannot convert negative number!")
+	
+    var_length = b""							#Create empty bytes object to store variable-width encoded bytes
+    while True:									#Until we are finished
+        x = number & 0x7f						#Using the 7 LSB of the number
+        number >>= 7							#And removing such data
+        if number: 								#If there is still source data to read
+            var_length += x.to_bytes(1, "big")	#Append such data to our bytes object
+            number -= 1							#Decrement by one to remove ambiguity
+        else: 
+            var_length += (0x80 | x).to_bytes(1, "big")	#Set termination byte
+            break 										#Final data is wronte, leave
+    return var_length									#return our variable-width encoded data
+```
+**`variable-width decoding`**
+```python
+def decode(encoded : bytes) -> int:
+    """
+	Decode variable-width encoded bytes into unsinged integer
+    """
+    if not isinstance(encoded,bytes): raise TypeError("Encoded data must be bytes object")
+
+    number = 0								    #Assume 0 for operational efficiency 
+    shift = 1
+    for byte in encoded:					    #for each byte in our given data
+        number += (byte & 0x7f) * shift		    #increase number by data bits
+        if byte & 0x80: break				    #break if termination bytes set
+        shift <<= 7
+        number += shift
+    return number							    #return decoded number
+```
+
+These functions are superior in general functionality to streamlines `bytesIO` operations granted that we can interact with uncontexutal information and do not need a file to process such operations. In the solution above the data is all numerical and therefore we can rationally understand that if passed more than `16 bytes` to `decode` we would get an unfeasibly large number which Python likely would handle internally.
+
+Since we never base our operations of the length of `bytes` with `variable-width encoding` we must (for good logic) pass a sliced value to be decoded, `bps` has a soft upperlimit of `12 exabytes` so we can use that with:
+```python
+decoded = decode(patch[:16])
+```
+It is then only logical to then modify `patch` such that the next time we need to decode `variable-width` encoded data we do not access the same data as last time. Naturally we cannot assume the index at which we found the terminating byte in `decode`. While we *could* modify `decode` to include such a feature it would degrade on the functional convenience of the code. Therefore we can simply construct a simple lambda for our specific task like this:
+```python
+encoded = b"\x45\x76\x34\x82\x43\x32\x11\xCE"
+trim = lambda: patch = patch[patch.index([byte for byte in encoded if byte & 0x80][0]):]
+decoded = decode(encoded);trim()
+```
+
+Now that we understand this we can begin to interpret the header. The header contains a filetype indicator reading `BPS1` and three `variable-width encoded` filesizes for `source_size`, `target_size` and `metadata_size` which when larger than zero prompts to access the following `metadata` which of size recently determined.
+
+For simplicity we can interpret the footer now, it stores three `CRC32` checksums being `source_checksum`, `target_checksum` and `patch_checksum` which are all self-explanatory. These of course are not compulsory nor are they perfect for confirming the intended arguements or result.
+
+Unlike `ips`, `bps` does not simply write patch data from the offset to the target - but rather the instructions on how to create the result data from repositioned source, written and current target data. We call these `actions` There are four of these which vary in functionality which all are called from one main function used to determine the required operation.
+
+```python
+"""
+predetermined:
+    source  |   Original file
+    patch   |   patch file (bps)
+    target  |   resultant bytearray
+    length  |   length of operation 
+    relativeOffset  |   Offset used for LZ Compression
+    outputOffset    |   Offset used for writing to `target`
+"""
+while len(patch): #code to interpret what function to call on
+    operation = decode(patch[:16]);patch = trim()       #The entirety of the operation data
+    (source_read,target_read,source_copy,target_copy)[operation & 3]()  #Function determined by indexing with 2 LSB of Operation
+    
+```
+
+**Example of a SourceRead action:**
+
+`Hex Dump of source_read`
+
+To make that easier to read, let's break it down.
+
+`Segmented | Hex | Dump`
+
+[Breakdown]
+```python
+def source_read() -> None:
+    nonlocal length,source,target,outputOffset      #Code to retrieve predetermined arguements
+    target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]     #Write in `target` bytearray a range in `source`
+    outputOffset += length                   #increase outputOffset for internal data manipulation
+```
+
+**Example of a TargetRead action:**
+
+`Hex Dump of target_read`
+
+To make that easier to read, let's break it down.
+
+`Segmented | Hex | Dump`
+
+[Breakdown]
+
+**Example of a SourceCopy action:**
+
+`Hex Dump of source_copy`
+
+To make that easier to read, let's break it down.
+
+`Segmented | Hex | Dump`
+
+[Breakdown]
+
+**Example of a TargetCopy action:**
+
+`Hex Dump of target_copy`
+
+To make that easier to read, let's break it down.
+
+`Segmented | Hex | Dump`
+
+[Breakdown]
+
+[Ambiguity explanation]
+
+### How to read/apply one?
+
+Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.
+
+```python
+    #simple as can be Python code
+```
+The code above accepts two `bytes` objects and will return ` byets` object which could be parsed into a `file` object.  If you only needed this data for patching then you could :
+```python
+def patchfile(modfile,basefile,outfile):
+	def get(File):
+		with open(File,"rb") as f:
+			return f.read()
+	with open(outfile,"wb") as f:
+		f.write(patch(get(base),get(mod)))
+```
+However as `patchlib.bps` is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions.
+
+**How does `bps` building work?**
+
+`bps` constructing is much more detailed than `bps` applying,  as we have to account for the following things:
+
+- Rule 1
+- Rule 2
+- Rule 3
+
+`*` *Explanation 1*
+
+`**` *Explanation 2*
+
+`***` *Explanation 3*
+
+Now that you know the rules, we can begin to create a `bps` file.
+```python
+    #Likely some technical behemoth
+```
+
+This is the *best* `ips` construction code in terms of minimal output and is very optimized.
+```python
+def makepatch(basefile,targetfile,outfile):
+	def get(File):
+		with open(File,"rb") as f:
+			return f.read()
+	with open(outfile,"wb") as f:
+		f.write(build(get(basefile),get(targetfile)))
+```
+
+### Why do we sometimes use other patching filetypes?
+Talk about Xdelta and IPS and UPS.
+
+### Should I use Xdelta over `bps`?
+Attempt to answer question
+
+### Should I make my own `bps` handling tool?
+As of this being written up there are not too may `bps` handlers compared to the likes of `ips`. If there is some way, be it operating system or technical feature, that `bps` has been left unfulfilled it may be logical to create these tools.
+
+
+
+### Can I contribute towards `patchlib`?
+Yes! `patchlib` GitHub allows for forks to be made and anyone with some `Python` skill can be included in the Project! In fact, there are many elements of the project left **totally** untouched that you could begin working on! If you are interested feel free in contacting on the [Discord](https://discord.com/invite/3DYCru4dCV)!
+### Is it not better just to make your own filetype?
+
+This should be overall somewhat discouraged for these reasons:
+
+- `bps` is standardized, people may not want to use your files/tools
+- It is quite likely that `bps` could solve this, people *will* use that instead
+- It creates some sort of proprietary sense to it, which may deter users.
+- If tool sharing is too slow for demand, users may share original files
+
+If people do not want to use your tools then the project's popularity will be stunted, if people construct a `bps` between the base and result file then nobody will feel obliged to use *your format or tool*. In the world of common base files it is natural to assume a universal format for manipulation, for this we opt for universal filetypes, limiting control only works for immediate distribution.
+	
