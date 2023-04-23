@@ -41,47 +41,42 @@ def decode(encoded : bytes) -> int:
     return number							    #return decoded number
 
 class bps:
-    class SourceRead: 
-        def __init__(self, parent, length): self.parent,self.length = parent, length
-    class TargetRead: 
-        def __init__(self, parent, length): self.parent,self.length = parent, length
-    class SourceCopy: 
-         def __init__(self, parent, length, relativeOffset): self.parent,self.length,self.relativeOffset = parent, length, relativeOffset
-    class TargetCopy: 
-        def __init__(self, parent, length, relativeOffset): self.parent,self.length,self.relativeOffset = parent, length, relativeOffset
+    class source_read: 
+        def __init__(self, parent, length, outputOffset): self.parent, self.length, self.outputOffset = parent, length, outputOffset
+    class target_read: 
+        def __init__(self, parent, length, outputOffset): self.parent, self.length, self.outputOffset = parent, length, outputOffset
+    class source_copy: 
+        def __init__(self, parent, length, outputOffset, relativeOffset): self.parent, self.length, self.outputOffset, self.relativeOffset = parent, length, outputOffset, relativeOffset
+    class target_copy: 
+        def __init__(self, parent, length, outputOffset, relativeOffset): self.parent, self.length, self.outputOffset, self.relativeOffset = parent, length, outputOffset, relativeOffset
 
     def __init__(self, patch : bytes):
 
-        trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 0x80][0])+1:]   #trim bps from first d0 enabled byte
-        
-        patch = patch[4:]
-        self.source_size = decode(patch[:16]);patch = trim()     #Decode Source Size   | read 16 bytes ahead for u128i
-        self.target_size = decode(patch[:16]);patch = trim()     #Decode Target Size   | read 16 bytes ahead for u128i
-        self.metadata_size = decode(patch[:16]);patch = trim()   #Decode Metadata Size | read 16 bytes ahead for u128i
-        
-    
-        self.metadata = patch[:self.metadata_size]             #Gather Metadata as bytearray (should be xml | may not be)
-        patch = patch[self.metadata_size:]                    #trim bps to exclude metadata
+        self.actions = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
+        source_checksum, target_checksum, patch_checksum = [patch[i:i+4] for i in range(-12, 0, 4)];patch = patch[4:-12]
+        trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
 
-        self.source_checksum = patch[-12:-8]
-        self.target_checksum = patch[-8:-4]
-        self.patch_checksum = patch[-4:]
+        sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
+        targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
+        metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
 
-        normalized = {}
-         
-        data_offset = 0
-        while data_offset < len(patch):
-            data = decode(patch[data_offset:])
-            command = data & 3
-            length = (data >> 2) + 1
+        if metadataSize:
+            metadata = patch[:metadataSize];patch = patch[metadataSize:]   # Gather Metadata as bytearray (should be xml | may not be)
 
-            if command & 2:  # if command is 2 or 3, read relative_offset
-                relative_offset = decode(patch[data_offset + 1:])
-                data_offset += 2
-
-            normalized[data_offset] = command, (length, data_offset) if command & 2 else (length,)
-            data_offset += 1
-        self.actions = [(self.SourceRead, self.TargetRead, self.SourceCopy, self.TargetRead)[action[0]](*action[1]) for action in normalized]
+        while len(patch):
+            operation = decode(patch[:16]);patch = trim() 
+            length = (operation >> 2) + 1  
+            args = [self, length, outputOffset]
+            if operation & 2: 
+                if operation & 1: 
+                     args.append(targetRelativeOffset)
+                     targetRelativeOffset += length
+                else:
+                    args.append(sourceRelativeOffset)
+                    sourceRelativeOffset += length
+            self.actions.append((self.source_read,self.target_read,self.source_copy,self.target_copy)[operation & 3](*args)) 
+            outputOffset += length;patch = patch[length:]
+        self.actions = tuple(self.actions)                                  #Memory efficiency
 
         
 
@@ -104,27 +99,40 @@ def apply(patch: bytes, source: bytes) -> bytes:
 
     if metadataSize:
         metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
+    else: metadata = None
 
 
-    def SourceRead() -> None:
-        nonlocal length,source,target,outputOffset                                                      #nonlocal some crucial pre-determiened values
-        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]             #copy data from source to same area in target
-        outputOffset += length                                                                          #read past data
-
-    def TargetRead() -> None:
-        nonlocal length #nonlocal some variables and perform some function
+    def source_read() -> None:
+        nonlocal length,source,target,outputOffset
+        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]
+        outputOffset += length
 
 
-    def SourceCopy() -> None:
-        nonlocal length #nonlocal some variables and perform some function
+    def target_read():
+        nonlocal length, outputOffset, target, patch
+        target[outputOffset:outputOffset+length] = patch[:length];patch = patch[length:]
+        outputOffset += length
+        
 
-    def TargetCopy() -> None:
-        nonlocal length #nonlocal some variables and perform some function
+    def source_copy() -> None:
+        nonlocal length, outputOffset, sourceRelativeOffset, patch
+        data = decode(patch[:16]);patch = trim() 
+        sourceRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+        target[outputOffset:outputOffset+length] = source[sourceRelativeOffset:sourceRelativeOffset+length] 
+        outputOffset += length;sourceRelativeOffset += length
+
+
+    def target_coy() -> None:
+        nonlocal length, outputOffset, targetRelativeOffset, patch
+        data = decode(patch[:16]);patch = trim() 
+        targetRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+        target[outputOffset:outputOffset+length] = source[targetRelativeOffset:targetRelativeOffset+length] 
+        outputOffset += length;targetRelativeOffset += length
 
     while len(patch):
-        operation = decode(patch);patch = trim() 
+        operation = decode(patch[:16]);patch = trim() 
         length = (operation >> 2) + 1  
-        (SourceRead,TargetRead,SourceCopy,TargetCopy)[operation & 3]()
+        (source_read,target_read,source_copy,target_coy)[operation & 3]()
         
 
     #Here we shall haev the code to loop instructions
