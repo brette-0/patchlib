@@ -2,7 +2,7 @@
 
 ### What is BPS?
 
-`bps` was designed by Emulator enthusiast [byuu]() who, with this solution, created the standard for patch files in the ROMhacking community. While in truth a successor to [`ups`](), `bps` offers a level of sophisticated versatility that was not needed when `ips` was suitable for known ROMhacking scopes.
+`bps` was designed by Emulator enthusiast [byuu](https://www.romhacking.net/forum/index.php?topic=32951.0) who, with this solution, created the standard for patch files in the ROMhacking community. While in truth a successor to [`ups`](), `bps` offers a level of sophisticated versatility that was not needed when `ips` was suitable for known ROMhacking scopes.
 
 `bps` is designed for mainly three reasons, the first being that `ips` had a soft upperlimit of about `16 MB` and therefore larger games would be unmodifiable if it were not for a successor. Secondly, `bps` does not *need* to store any `source` data beyond original file offset as it refers to `source` during patching. Finally, `bps` offers more efficient patching with incredibly low filesizes.
 
