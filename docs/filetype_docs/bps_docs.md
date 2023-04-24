@@ -156,7 +156,6 @@ This code works functionally the same as `source_copy` but refers to the `target
 
 ```python
 def target_copy() -> None:
-    def source_copy() -> None:
     nonlocal length, patch, target, outputOffset
     data = decode(patch[:16]);trim() 
     relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
@@ -170,9 +169,46 @@ def target_copy() -> None:
 Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.
 
 ```python
-    #simple as can be Python code
+def apply(patch : bytes, source : bytes) -> bytes:
+    target = bytearray(source); outputOffset = 0
+    source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
+    sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
+    targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
+    metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+    if metadataSize:
+        metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
+    else: metadata = None
+
+    def source_read() -> None:
+        nonlocal length,source,target,outputOffset
+        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]
+        outputOffset += length
+    
+    def target_read() -> None:
+        nonlocal length, patch, target, outputOffset
+        target[outputOffset:outputOffset+length] = patch[:length]
+        patch = patch[length:]
+    
+    def source_copy() -> None:
+        nonlocal length, source, patch, target, outputOffset
+        data = decode(patch[:16]);trim() 
+        relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+        target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length]
+    
+    def target_copy() -> None:
+        nonlocal length, patch, target, outputOffset
+        data = decode(patch[:16]);trim() 
+        relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+        target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] 
+
+    while len(patch):
+        operation = decode(patch[:16]);trim()
+        length = (operation >> 2) + 1  
+        (source_read,target_read,source_copy,target_copy)[operation & 3]()
+
+    return bytes(target)
 ```
-The code above accepts two `bytes` objects and will return ` byets` object which could be parsed into a `file` object.  If you only needed this data for patching then you could :
+The code above accepts two `bytes` objects and will return ` bytes` object which could be parsed into a `file` object.  If you only needed this data for patching then you could :
 ```python
 def patchfile(modfile,basefile,outfile):
 	def get(File):
@@ -202,7 +238,7 @@ Now that you know the rules, we can begin to create a `bps` file.
     #Likely some technical behemoth
 ```
 
-This is the *best* `ips` construction code in terms of minimal output and is very optimized.
+[Comment on adequacy of code]
 ```python
 def makepatch(basefile,targetfile,outfile):
 	def get(File):
