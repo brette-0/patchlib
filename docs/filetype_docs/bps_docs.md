@@ -8,35 +8,20 @@
 
 **Popular BPS tools include:**
 
- - [beat]()
- - Tool 2
+ - [beat](https://www.romhacking.net/utilities/893/)
+ - [Multipatch](https://www.romhacking.net/utilities/746/)
  - Tool 3
 
-[Tool Overview]
- 
- **As well as historic ones such as:**
- 
-- Tool 4
-- Tool 5
-- Tool 6
- 
-[Tool Overview]
+byuu developed [beat](https://www.romhacking.net/utilities/893/) alongside their `bps` filetype intended to be used in a 32bit Windows environment. [Multipatch](https://www.romhacking.net/utilities/746/) was designed for MacOSX and supports many patch filetypes including `bps`. `bps` does not have a long history like `ips` and much less tools has been developed as of writing this in 2023.
 
- **As well as more developmental BPS tools:**
- 
-- Tool 7
-- Tool 8
-- Tool 9
- 
-[Tool Overview]
 
 [ROM Patcher JS](https://www.marcrobledo.com/RomPatcher.js/), however eradicates the usage of executable "diff" appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being `xdelta` files that use `Xdelta3` format which requires an x64/ARM environment that most web services cannot offer)
 
-### How does it work?
+## How does it work?
 
 In order to understand `bps` adequatly we need to understand the concept of `variable-width encoding` and how it works with `bps`. `variable-width encoding` is where a value (in our case numerical) is stored split into `7 bit` segments in which the MSB of said byte is an indicator to stop reading data. The result of reading through bytes until the MSB is set is our `decoded` value.
 
-**`variable-width encoding`**
+### `variable-width encoding`
 ```python
 def encode(number : int) -> bytes:
     """
@@ -58,7 +43,7 @@ def encode(number : int) -> bytes:
             break 										#Final data is wronte, leave
     return var_length									#return our variable-width encoded data
 ```
-**`variable-width decoding`**
+### `variable-width decoding`
 ```python
 def decode(encoded : bytes) -> int:
     """
@@ -89,6 +74,8 @@ trim = lambda: patch = patch[patch.index([byte for byte in encoded if byte & 0x8
 decoded = decode(encoded);trim()
 ```
 
+### Header and Footer extraction
+
 Now that we understand this we can begin to interpret the header. The header contains a filetype indicator reading `BPS1` and three `variable-width encoded` filesizes for `source_size`, `target_size` and `metadata_size` which when larger than zero prompts to access the following `metadata` which of size recently determined.
 
 For simplicity we can interpret the footer now, it stores three `CRC32` checksums being `source_checksum`, `target_checksum` and `patch_checksum` which are all self-explanatory. These of course are not compulsory nor are they perfect for confirming the intended arguements or result.
@@ -111,15 +98,14 @@ while len(patch): #code to interpret what function to call on
     
 ```
 
-**Example of a SourceRead action:**
+### Example of a SourceRead action:
 
-`Hex Dump of source_read`
+`4c 2b 01 80`
 
-To make that easier to read, let's break it down.
+Doesn't look like much does it? Well, first we need to `decode` the data. We then get `2135628` of which the 2LSB represent the action, which in the case of `sourceRead` is 0. Finall we shift the data two bits to the right and increment by one to retrieve the `length` of the operation.
 
-`Segmented | Hex | Dump`
+The length is whatever is stored left in the data, in this case it is `533908`.
 
-[Breakdown]
 ```python
 def source_read() -> None:
     nonlocal length,source,target,outputOffset      #Code to retrieve predetermined arguements
@@ -127,17 +113,20 @@ def source_read() -> None:
     outputOffset += length                   #increase outputOffset for internal data manipulation
 ```
 
-**Example of a TargetRead action:**
+### Example of a TargetRead action:
 
-`Hex Dump of target_read`
+`41 3d 6a 80`
 
-To make that easier to read, let's break it down.
+This functions quite similarly to `SourceRead`, accessing `length` the same way as before, but instead of reading from the `source` file we read onwards `length` bytes into the `patch` like `ips`. After accessing the `operation` as 1, we then shift two bits to the right to access the lenght of `964561` which is how far we will read into the `patch`.
 
-`Segmented | Hex | Dump`
+```python
+def target_read() -> None:
+    nonlocal length, patch, target, outputOffset #Code to retrieve predetermined arguements
+    target[outputOffset:outputOffset+length] = patch[:length] #Write in `target` bytearray a range in `patch`
+    patch = patch[length:] #trim patch data from patch
+```
 
-[Breakdown]
-
-**Example of a SourceCopy action:**
+### Example of a SourceCopy action:
 
 `Hex Dump of source_copy`
 
@@ -147,7 +136,7 @@ To make that easier to read, let's break it down.
 
 [Breakdown]
 
-**Example of a TargetCopy action:**
+### Example of a TargetCopy action:
 
 `Hex Dump of target_copy`
 
