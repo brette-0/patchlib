@@ -128,23 +128,40 @@ def target_read() -> None:
 
 ### Example of a SourceCopy action:
 
-`Hex Dump of source_copy`
+`62 35 4b 83 31 7e 64 a8`
 
 To make that easier to read, let's break it down.
 
-`Segmented | Hex | Dump`
+`62 35 4b 83 | 31 7e 64 a8`
 
-[Breakdown]
+In the first split we have the common instruction and lenth data, but then we also must decode additional data which includes a signed value used for relative copying. This signed value has the signature stored in the LSB used to copy data from the source to the target at different offsets.
+
+```python
+def source_copy() -> None:
+    nonlocal length, source, patch, target, outputOffset
+    data = decode(patch[:16]);trim() 
+    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+    target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length] 
+```
 
 ### Example of a TargetCopy action:
 
-`Hex Dump of target_copy`
+`5a 14 23 80 4e 41 70 84`
 
 To make that easier to read, let's break it down.
 
-`Segmented | Hex | Dump`
+`5a 14 23 80 | 4e 41 70 84`
 
-[Breakdown]
+This code works functionally the same as `source_copy` but refers to the `target`. This is used when identical instances of mod-exclusive data exists in the `target` that can be stored as one and duplicated.
+
+```python
+def target_copy() -> None:
+    def source_copy() -> None:
+    nonlocal length, patch, target, outputOffset
+    data = decode(patch[:16]);trim() 
+    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
+    target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] 
+```
 
 [Ambiguity explanation]
 
