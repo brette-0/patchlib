@@ -45,15 +45,19 @@ def decode(encoded : bytes) -> int:
 
 class bps:
     class source_read: 
-        def __init__(self, parent, length, outputOffset): self.parent, self.length, self.outputOffset = parent, length, outputOffset
+        def __init__(self, parent, length, outputOffset, name): 
+            self.parent, self.length, self.outputOffset, self.name = parent, length, outputOffset, name
     class target_read: 
-        def __init__(self, parent, length, outputOffset): self.parent, self.length, self.outputOffset = parent, length, outputOffset
+        def __init__(self, parent, length, outputOffset, data, name): 
+            self.parent, self.length, self.outputOffset, self.data, self.name  = parent, length, outputOffset, data, name
     class source_copy: 
-        def __init__(self, parent, length, outputOffset, relativeOffset): self.parent, self.length, self.outputOffset, self.relativeOffset = parent, length, outputOffset, relativeOffset
-    class target_copy: 
-        def __init__(self, parent, length, outputOffset, relativeOffset): self.parent, self.length, self.outputOffset, self.relativeOffset = parent, length, outputOffset, relativeOffset
+        def __init__(self, parent, length, outputOffset, relativeOffset, name):
+           self.parent, self.length, self.outputOffset, self.relativeOffset, self.name = parent, length, outputOffset, relativeOffset, name
+    class target_copy(source_copy): 
+        def __init__(self, parent, length, outputOffset, relativeOffset, name):
+            super().__init__(self, parent, length, outputOffset, relativeOffset, name)
 
-    def __init__(self, patch : bytes):
+    def __init__(self, patch : bytes, checks : bool = True):
 
         self.actions = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
@@ -63,23 +67,29 @@ class bps:
         self.targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
         self.metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
 
-        if self.metadataSize:
-            self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]   # Gather Metadata as bytearray (should be xml | may not be)
 
-        while len(patch):
-            operation = decode(patch[:16]);patch = trim() 
-            length = (operation >> 2) + 1  
-            args = [self, length, outputOffset]
-            if operation & 2: 
-                if operation & 1: 
-                     args.append(targetRelativeOffset)
-                     targetRelativeOffset += length
-                else:
-                    args.append(sourceRelativeOffset)
-                    sourceRelativeOffset += length
-            self.actions.append((self.source_read,self.target_read,self.source_copy,self.target_copy)[operation & 3](*args)) 
-            outputOffset += length;patch = patch[length:]
-        self.actions = tuple(self.actions)                                  #Memory efficiency
+        if self.metadataSize:
+            self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
+
+
+        while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
+            operation = decode(patch[:16]);patch = trim()                                   # Decode operation  | read 16 bytes ahead for u128i
+            length = (operation >> 2) + 1                                                   # Determine length
+            args = [self, length, outputOffset]                                             # Assume default args
+            if operation & 2:                                                               # If a copy function
+                relativeOffset = decode(patch[:16]);patch = trim()                          # Decode the modifier
+                relativeOffset = (relativeOffset >> 1) * (-1 if relativeOffset & 1 else 1)  # Process modifier
+                if operation & 1: targetRelativeOffset += relativeOffset                    # Modify Appropriate relativeOffset
+                else: sourceRelativeOffset += relativeOffset
+                args.append(targetRelativeOffset if operation & 1 else sourceRelativeOffset)# Add value to normalized data
+            elif operation & 1:                                                             # If target_read
+                args.append(patch[:length]);patch = patch[length:]                          # Append the actual data and trim patch accordingly
+            outputOffset += length                                                          # Increase variable counter to indicate 
+            self.operations.append(eval(("self.source_read","self.target_read","self.source_copy","self.target_copy")[operation & 3])(*args),
+                                name=f"Unnamed {('self.source_read','self.target_read','self.source_copy','self.target_copy')[operation&3]} at {outputOffset}")
+
+            
+        self.operations = tuple(self.actions)                                  #Memory efficiency
 
         
 

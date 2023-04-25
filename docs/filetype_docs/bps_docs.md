@@ -174,11 +174,11 @@ Here it will be demonstrated in very simple Python, but annotated well even when
 def apply(patch : bytes, source : bytes) -> bytes:
     target = bytearray(source); outputOffset = 0
     source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
-    sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
-    targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
-    metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+    sourceSize = decode(patch[:16]); patch = trim()
+    targetSize = decode(patch[:16]); patch = trim()
+    metadataSize = decode(patch[:16]); patch = trim()
     if metadataSize:
-        metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
+        metadata = patch[:metadataSize];patch = patch[metadataSize:]
     else: metadata = None
 
     def source_read() -> None:
