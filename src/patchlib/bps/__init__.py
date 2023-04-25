@@ -2,7 +2,7 @@
 in-dev bps beta
 """
 
-__version__ = "0.3"
+__version__ = "0.5"
 
 
 from zlib import crc32
@@ -44,6 +44,7 @@ def decode(encoded : bytes) -> int:
     return number							    #return decoded number
 
 class bps:
+    def __iter__(self): return iter(self.operations)
     class source_read: 
         def __init__(self, parent, length, outputOffset, name): 
             self.parent, self.length, self.outputOffset, self.name = parent, length, outputOffset, name
@@ -55,12 +56,12 @@ class bps:
            self.parent, self.length, self.outputOffset, self.relativeOffset, self.name = parent, length, outputOffset, relativeOffset, name
     class target_copy(source_copy): 
         def __init__(self, parent, length, outputOffset, relativeOffset, name):
-            super().__init__(self, parent, length, outputOffset, relativeOffset, name)
+            super().__init__(parent, length, outputOffset, relativeOffset, name)
 
     def __init__(self, patch : bytes, checks : bool = True):
 
-        self.actions = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
+        self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
+        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None].hex() for i in range(-12, 0, 4)];patch = patch[4:-12]
         trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
 
         self.sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
@@ -85,19 +86,46 @@ class bps:
             elif operation & 1:                                                             # If target_read
                 args.append(patch[:length]);patch = patch[length:]                          # Append the actual data and trim patch accordingly
             outputOffset += length                                                          # Increase variable counter to indicate 
-            self.operations.append(eval(("self.source_read","self.target_read","self.source_copy","self.target_copy")[operation & 3])(*args),
-                                name=f"Unnamed {('self.source_read','self.target_read','self.source_copy','self.target_copy')[operation&3]} at {outputOffset}")
+            self.operations.append(eval(("self.source_read","self.target_read","self.source_copy","self.target_copy")[operation & 3])(*args,
+                                name=f"Unnamed {('self.source_read','self.target_read','self.source_copy','self.target_copy')[operation&3]} at {outputOffset}"))
 
             
-        self.operations = tuple(self.actions)                                  #Memory efficiency
+        self.operations = tuple(self.operations)                                  #Memory efficiency
 
         
 
+def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
+    target = b"";outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
+
+    if len(source) != patch.sourceSize and checks: raise ValueError()
+    if crc32(source) != patch.source_checksum and checks: raise ValueError()
+    #patch corruption mechanic lost - but is that a bad thing entirely?
 
 
+    def source_read(operation : bps.source_read): 
+        nonlocal source, target
+        target += source[operation.outputOffset:operation.outputOffset + operation.length]
+    def target_read(operation : bps.target_read): 
+        nonlocal target
+        target += operation.data
+    def source_copy(operation : bps.source_copy): 
+        nonlocal source, target, sourceRelativeOffset
+        sourceRelativeOffset += operation.relativeOffset
+        target += source[sourceRelativeOffset:sourceRelativeOffset+operation.length]
+    def target_copy(operation : bps.target_copy):
+        nonlocal target, targetRelativeOffset
+        nonlocal targetRelativeOffset
+        targetRelativeOffset += operation.relativeOffset
+        target += source[targetRelativeOffset:targetRelativeOffset+operation.length]
 
 
-def apply(patch: bytes, source: bytes, checks : bool = True) -> bytes: 
+    for operation in patch:
+        (source_read,target_read,source_copy,target_copy)[(bps.source_read,bps.target_read,bps.source_copy,bps.target_copy).index(operation.__class__)](operation)
+
+    return (target, patch.metadata) if hasattr(patch, "metadata") else (target,)
+
+
+def apply_old(patch: bytes, source: bytes, checks : bool = True) -> bytes: 
     """
     Applies BPS Patch to source file
     """
