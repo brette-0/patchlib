@@ -249,7 +249,12 @@ def makepatch(basefile,targetfile,outfile):
 ```
 
 ### Why do we sometimes use other patching filetypes?
-Talk about Xdelta and IPS and UPS.
+`ips` was the original patch filetype, however it complied to outdated hardware limitations that makes it often unsuitable for larger tasks. `bps` is not the immediate successor to `ips`, but it is the successor to `ups` also made by byuu. 
+
+[Much research will need to be done into `ups`]
+
+
+Talk about Xdelta.
 
 ### Should I use Xdelta over `bps`?
 Attempt to answer question
@@ -271,4 +276,3 @@ This should be overall somewhat discouraged for these reasons:
 - If tool sharing is too slow for demand, users may share original files
 
 If people do not want to use your tools then the project's popularity will be stunted, if people construct a `bps` between the base and result file then nobody will feel obliged to use *your format or tool*. In the world of common base files it is natural to assume a universal format for manipulation, for this we opt for universal filetypes, limiting control only works for immediate distribution.
-	
