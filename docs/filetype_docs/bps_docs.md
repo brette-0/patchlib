@@ -1,4 +1,4 @@
-## Brette's Consumable BPS Filetype Docs
+## **Brette's Consumable BPS Filetype Docs**
 
 ### What is BPS?
 
@@ -74,7 +74,7 @@ trim = lambda: patch = patch[patch.index([byte for byte in encoded if byte & 0x8
 decoded = decode(encoded);trim()
 ```
 
-### Header and Footer extraction
+### **Header and Footer extraction**
 
 Now that we understand this we can begin to interpret the header. The header contains a filetype indicator reading `BPS1` and three `variable-width encoded` filesizes for `source_size`, `target_size` and `metadata_size` which when larger than zero prompts to access the following `metadata` which of size recently determined.
 
@@ -98,7 +98,7 @@ while len(patch): #code to interpret what function to call on
     
 ```
 
-### Example of a SourceRead action:
+### **Example of a SourceRead action:**
 
 `4c 2b 01 80`
 
@@ -113,7 +113,7 @@ def source_read() -> None:
     outputOffset += length                   #increase outputOffset for internal data manipulation
 ```
 
-### Example of a TargetRead action:
+### **Example of a TargetRead action:**
 
 `41 3d 6a 80`
 
@@ -126,7 +126,7 @@ def target_read() -> None:
     patch = patch[length:] #trim patch data from patch
 ```
 
-### Example of a SourceCopy action:
+### **Example of a SourceCopy action:**
 
 `62 35 4b 83 31 7e 64 a8`
 
@@ -138,13 +138,13 @@ In the first split we have the common instruction and lenth data, but then we al
 
 ```python
 def source_copy() -> None:
-    nonlocal length, source, patch, target, outputOffset
-    data = decode(patch[:16]);trim() 
-    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-    target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length] 
+    nonlocal length, source, patch, target, outputOffset                                    #Code to retrieve predetermined arguements
+    data = decode(patch[:16]);trim()  #code to access the signed relativeOffset
+    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)  #processing signed data into legible form
+    target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length] #applying said data in the target
 ```
 
-### Example of a TargetCopy action:
+### **Example of a TargetCopy action:**
 
 `5a 14 23 80 4e 41 70 84`
 
@@ -156,15 +156,17 @@ This code works functionally the same as `source_copy` but refers to the `target
 
 ```python
 def target_copy() -> None:
-    nonlocal length, patch, target, outputOffset
-    data = decode(patch[:16]);trim() 
-    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-    target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] 
+    nonlocal length, patch, target, outputOffset                                    #Code to retrieve predetermined arguements
+    data = decode(patch[:16]);trim() #code to access the signed relativeOffset
+    relativeOffset = (data >> 1) * (-1 if data & 1 else 1)  #processing signed data into legible form
+    target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] #applying said data in the target
 ```
 
-[Ambiguity explanation]
+We use `nonlocal` to access length due to how it is predetermined during `action` identification. We also `nonlocal target` as to modify pre-existing data and not interact with a new object. Finally we `nonlocal` either `source`, `patch` or both so we do not duplicate the data in memory.
 
-### How to read/apply one?
+
+
+### **How to read and apply one?**
 
 Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.
 
@@ -215,7 +217,7 @@ def patchfile(modfile,basefile,outfile):
 		with open(File,"rb") as f:
 			return f.read()
 	with open(outfile,"wb") as f:
-		f.write(patch(get(base),get(mod)))
+		f.write(apply(get(base),get(mod)))
 ```
 However as `patchlib.bps` is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions.
 
