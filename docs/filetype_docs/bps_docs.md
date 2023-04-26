@@ -66,11 +66,13 @@ These functions are superior in general functionality to streamlines `bytesIO` o
 Since we never base our operations of the length of `bytes` with `variable-width encoding` we must (for good logic) pass a sliced value to be decoded, `bps` has a soft upperlimit of `12 exabytes` so we can use that with:
 ```python
 decoded = decode(patch[:16])
+#if the value is signed then we need do the below
+decoded = (decoded >> 1)*(-1 if decoded & 1 else 1)
 ```
-It is then only logical to then modify `patch` such that the next time we need to decode `variable-width` encoded data we do not access the same data as last time. Naturally we cannot assume the index at which we found the terminating byte in `decode`. While we *could* modify `decode` to include such a feature it would degrade on the functional convenience of the code. Therefore we can simply construct a simple lambda for our specific task like this:
+It is then only logical to then modify `patch` such that the next time we need to decode `variable-width` encoded data we do not access the same data as last time. Naturally we cannot assume the index at which we found the terminating byte in `decode`. While we *could* modify `decode` to include such a feature it would degrade on the functional convenience of the code. Therefore we can simply construct a simple subroutine for our specific task like this:
 ```python
 encoded = b"\x45\x76\x34\x82\x43\x32\x11\xCE"
-trim = lambda: patch = patch[patch.index([byte for byte in encoded if byte & 0x80][0]):]
+def trim(): patch = patch[patch.index([byte for byte in encoded if byte & 0x80][0]):]
 decoded = decode(encoded);trim()
 ```
 
@@ -172,7 +174,7 @@ Here it will be demonstrated in very simple Python, but annotated well even when
 ```python
 def apply(patch : bytes, source : bytes) -> bytes:
     target = bytearray(source); outputOffset = 0
-    source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
+    source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)];patch = patch[4:-12]
     sourceSize = decode(patch[:16]); patch = trim()
     targetSize = decode(patch[:16]); patch = trim()
     metadataSize = decode(patch[:16]); patch = trim()
