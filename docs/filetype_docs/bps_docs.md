@@ -110,7 +110,6 @@ The length is whatever is stored left in the data, in this case it is `533908`.
 def source_read() -> None:
     nonlocal length,source,target,outputOffset      #Code to retrieve predetermined arguements
     target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]     #Write in `target` bytearray a range in `source`
-    outputOffset += length                   #increase outputOffset for internal data manipulation
 ```
 
 ### **Example of a TargetRead action:**
@@ -207,6 +206,7 @@ def apply(patch : bytes, source : bytes) -> bytes:
         operation = decode(patch[:16]);trim()
         length = (operation >> 2) + 1  
         (source_read,target_read,source_copy,target_copy)[operation & 3]()
+        outputOffset += length
 
     return bytes(target)
 ```

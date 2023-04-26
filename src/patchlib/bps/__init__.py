@@ -41,32 +41,46 @@ def decode(encoded : bytes) -> int:
         if byte & 0x80: break				    #break if termination bytes set
         shift <<= 7
         number += shift
-    return number							    #return decoded number
+    return number							        #return decoded number
 
 class bps:
     def __iter__(self): return iter(self.operations)
-    class source_read: 
-        def __init__(self, parent, length, outputOffset, name): 
-            self.parent, self.length, self.outputOffset, self.name = parent, length, outputOffset, name
-    class target_read: 
-        def __init__(self, parent, length, outputOffset, data, name): 
-            self.parent, self.length, self.outputOffset, self.data, self.name  = parent, length, outputOffset, data, name
-    class source_copy: 
-        def __init__(self, parent, length, outputOffset, relativeOffset, name):
-           self.parent, self.length, self.outputOffset, self.relativeOffset, self.name = parent, length, outputOffset, relativeOffset, name
-    class target_copy(source_copy): 
-        def __init__(self, parent, length, outputOffset, relativeOffset, name):
-            super().__init__(parent, length, outputOffset, relativeOffset, name)
+    class operation:
+        def __init__(self, parent, operation : int, length : int, outputOffset : int, **kwargs : dict):
+            valid_kwargs = {"data", "relativeOffset", "name"}
+            if not all(arg in valid_kwargs for arg in kwargs):
+                raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
+            if not isinstance(length, int): raise TypeError("Length must be of type `int`")
+            if length < 1: raise ValueError("length must be non-zero positive integer.")
+            if not isinstance(outputOffset, int): raise TypeError("outputOffset must be of type `int`") 
+            if outputOffset < 0: raise ValueError("outputOffset must be positive.")
+            if not isinstance(operation,int): raise TypeError("instance indicator must of type `int`") 
+            if abs(operation & 3) != operation: raise ValueError("operation indicator must be between 0 and 3")
+            if kwargs.get("data") != None:
+                if operation & 3 != 1: raise ValueError("`data` attribute only belongs to target_read action")                           # Only target_read should have this
+                elif not isinstance(kwargs.get("data"), bytes): raise TypeError("`data` must be of type `bytes`") 
+                elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")                                   
+            if kwargs.get("relativeOffset") != None:
+                if not operation & 2: print(operation);raise ValueError("`relativeOffset` attribute only belongs to source_copy and target_copy actions") 
+                elif not isinstance(kwargs.get("relativeOffset"),int): raise TypeError("`relativeOffset` must only be of type `int`") 
+                #elif not kwargs.get("relativeOffset"): raise ValueError("`relativeOffset` must be non-zero")                           #unsure
+            self.name = kwargs.get("name",f'Unnamed {("source_read","target_read","target_copy","target_read")[operation]} at {outputOffset}')
+            self.__dict__.update({**{arg: data for arg, data in locals().items() if arg in {"parent","operation","length","outputOffset"}}, **kwargs})
 
     def __init__(self, patch : bytes, checks : bool = True):
 
         self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None].hex() for i in range(-12, 0, 4)];patch = patch[4:-12]
-        trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
+        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)];patch = patch[:-4]
 
-        self.sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
-        self.targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
-        self.metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
+
+        if crc32(patch) != int(self.patch_checksum, 16) and checks:raise ValueError(f"Expected patch with checksum {hex(crc32(patch))[2:]} but calculated checksum of {self.patch_checksum}")
+        patch = patch[4:-8]
+        
+        def trim(): nonlocal patch;patch = patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]#trim bps from first d0 enabled byte
+
+        self.sourceSize = decode(patch[:16]);trim()                                # Decode Source Size   | read 16 bytes ahead for u128i
+        self.targetSize = decode(patch[:16]);trim()                                # Decode Target Size   | read 16 bytes ahead for u128i
+        self.metadataSize = decode(patch[:16]);trim()                              # Decode Metadata Size | read 16 bytes ahead for u128i
 
 
         if self.metadataSize:
@@ -74,32 +88,42 @@ class bps:
 
 
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
-            operation = decode(patch[:16]);patch = trim()                                   # Decode operation  | read 16 bytes ahead for u128i
+            operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
             length = (operation >> 2) + 1                                                   # Determine length
             args = [self, length, outputOffset]                                             # Assume default args
             if operation & 2:                                                               # If a copy function
-                relativeOffset = decode(patch[:16]);patch = trim()                          # Decode the modifier
+                relativeOffset = decode(patch[:16]);trim()                                  # Decode the modifier
                 relativeOffset = (relativeOffset >> 1) * (-1 if relativeOffset & 1 else 1)  # Process modifier
                 if operation & 1: targetRelativeOffset += relativeOffset                    # Modify Appropriate relativeOffset
                 else: sourceRelativeOffset += relativeOffset
-                args.append(targetRelativeOffset if operation & 1 else sourceRelativeOffset)# Add value to normalized data
+                args.append(targetRelativeOffset if operation & 1 else sourceRelativeOffset)# Add value to normalized data 
+                self.operations.append(self.operation(self, operation & 3, length, outputOffset, relativeOffset = relativeOffset))
             elif operation & 1:                                                             # If target_read
-                args.append(patch[:length]);patch = patch[length:]                          # Append the actual data and trim patch accordingly
+                self.operations.append(self.operation(self, 1, length, outputOffset, data = patch[:length]));patch = patch[length:]                          # Append the actual data and trim patch accordingly
+            else:
+                self.operations.append(self.operation(self, 0, length, outputOffset))
             outputOffset += length                                                          # Increase variable counter to indicate 
-            self.operations.append(eval(("self.source_read","self.target_read","self.source_copy","self.target_copy")[operation & 3])(*args,
-                                name=f"Unnamed {('self.source_read','self.target_read','self.source_copy','self.target_copy')[operation&3]} at {outputOffset}"))
 
             
-        self.operations = tuple(self.operations)                                  #Memory efficiency
+        self.operations = tuple(self.operations)                                            # Memory efficiency
 
         
 
 def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
+
+    if not isinstance(patch, bps): raise ValueError() 
+    if not isinstance(source, bytes): raise ValueError()
+    if not isinstance(checks, bool): raise ValueError() 
+
+
     target = b"";outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
 
     if len(source) != patch.sourceSize and checks: raise ValueError()
     if crc32(source) != patch.source_checksum and checks: raise ValueError()
     #patch corruption mechanic lost - but is that a bad thing entirely?
+    if crc32(target) != patch.target_checksum and checks: raise ValueError() 
+    if len(target) != patch.targetSize and checks: raise ValueError()   #potentially redudant?
+
 
 
     def source_read(operation : bps.source_read): 
@@ -123,60 +147,3 @@ def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
         (source_read,target_read,source_copy,target_copy)[(bps.source_read,bps.target_read,bps.source_copy,bps.target_copy).index(operation.__class__)](operation)
 
     return (target, patch.metadata) if hasattr(patch, "metadata") else (target,)
-
-
-def apply_old(patch: bytes, source: bytes, checks : bool = True) -> bytes: 
-    """
-    Applies BPS Patch to source file
-    """
-
-    target = bytearray(source);outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-    source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None] for i in range(-12, 0, 4)];patch = patch[4:-12]
-    if not all(crc32(component) == int(goal.hex(),16) for component,goal in ((patch,patch_checksum),(source,source_checksum))) and checks: raise ValueError("Sourcefile or Patchfile corrupt")
-    trim = lambda: patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]   #trim bps from first d0 enabled byte
-
-    sourceSize = decode(patch[:16]); patch = trim()                    # Decode Source Size   | read 16 bytes ahead for u128i
-    targetSize = decode(patch[:16]); patch = trim()                    # Decode Target Size   | read 16 bytes ahead for u128i
-    metadataSize = decode(patch[:16]); patch = trim()                  # Decode Metadata Size | read 16 bytes ahead for u128i
-
-    if len(source) != sourceSize and checks: raise ValueError("Sourcefile is of unacceptable filesize")
-
-    if metadataSize:
-        metadata = patch[:metadataSize];patch = patch[metadataSize:]  # Gather Metadata as bytearray (should be xml | may not be)
-    else: metadata = None
-
-
-    def source_read() -> None:
-        nonlocal length,source,target,outputOffset
-        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]
-        outputOffset += length
-
-
-    def target_read():
-        nonlocal length, outputOffset, target, patch
-        target[outputOffset:outputOffset+length] = patch[:length];patch = patch[length:]
-        outputOffset += length
-        
-
-    def source_copy() -> None:
-        nonlocal length, outputOffset, sourceRelativeOffset, patch, trim
-        data = decode(patch[:16]);patch = trim() 
-        sourceRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-        target[outputOffset:outputOffset+length] = source[sourceRelativeOffset:sourceRelativeOffset+length] 
-        outputOffset += length;sourceRelativeOffset += length
-
-
-    def target_copy() -> None:
-        nonlocal length, outputOffset, targetRelativeOffset, patch, trim
-        data = decode(patch[:16]);patch = trim() 
-        targetRelativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-        target[outputOffset:outputOffset+length] = source[targetRelativeOffset:targetRelativeOffset+length] 
-        outputOffset += length;targetRelativeOffset += length
-
-    while len(patch):
-        operation = decode(patch[:16]);patch = trim() 
-        length = (operation >> 2) + 1  
-        (source_read,target_read,source_copy,target_copy)[operation & 3]()
-        
-
-    return target, source_checksum, target_checksum, patch_checksum, metadata
