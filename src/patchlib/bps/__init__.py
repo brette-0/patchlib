@@ -7,12 +7,14 @@ __version__ = "0.5"
 
 from zlib import crc32
 
-def encode(number : int) -> bytes:
+def encode(number : int, signed : bool = False) -> bytes:
     """
 	Convert number into variable-width encoded bytes
     """
 
     if not isinstance(number,int): raise TypeError("Number data must be integer")
+    if not isinstance(signed,bool): raise TypeError("sign flag must be boolean")
+    if signed: number = abs(number * 2) + number < 0
     if number < 0: raise ValueError("Cannot convert negative number!")
 	
     var_length = b""							#Create empty bytes object to store variable-width encoded bytes
@@ -28,11 +30,12 @@ def encode(number : int) -> bytes:
     return var_length									#return our variable-width encoded data
 
 
-def decode(encoded : bytes) -> int:
+def decode(encoded : bytes, signed : bool = False) -> int:
     """
 	Decode variable-width encoded bytes into unsinged integer
     """
     if not isinstance(encoded,bytes): raise TypeError("Encoded data must be bytes object")
+    if not isinstance(signed,bool): raise TypeError("sign flag must be bool object")
 
     number = 0								    #Assume 0 for operational efficiency 
     shift = 1
@@ -41,15 +44,18 @@ def decode(encoded : bytes) -> int:
         if byte & 0x80: break				    #break if termination bytes set
         shift <<= 7
         number += shift
-    return number							        #return decoded number
+    return (number>>1)*(-1 if number & 1 else 1) if signed else number							        #return decoded number
 
 class bps:
     def __iter__(self): return iter(self.operations)
+    def __getitem__(self, index): return self.operations[index]
+    def __setitem__(self, index, value): self.operations[index] = value
     class operation:
+        def __del__(self): 
+            self.parent.remove(self)
         def __init__(self, parent, operation : int, length : int, outputOffset : int, **kwargs : dict):
             valid_kwargs = {"data", "relativeOffset", "name"}
-            if not all(arg in valid_kwargs for arg in kwargs):
-                raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
+            if not all(arg in valid_kwargs for arg in kwargs): raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
             if not isinstance(length, int): raise TypeError("Length must be of type `int`")
             if length < 1: raise ValueError("length must be non-zero positive integer.")
             if not isinstance(outputOffset, int): raise TypeError("outputOffset must be of type `int`") 
@@ -57,17 +63,20 @@ class bps:
             if not isinstance(operation,int): raise TypeError("instance indicator must of type `int`") 
             if abs(operation & 3) != operation: raise ValueError("operation indicator must be between 0 and 3")
             if kwargs.get("data") != None:
-                if operation & 3 != 1: raise ValueError("`data` attribute only belongs to target_read action")                           # Only target_read should have this
+                if operation & 3 != 1: raise ValueError("`data` attribute only belongs to target_read action")                
                 elif not isinstance(kwargs.get("data"), bytes): raise TypeError("`data` must be of type `bytes`") 
-                elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")                                   
+                elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")     
             if kwargs.get("relativeOffset") != None:
                 if not operation & 2: print(operation);raise ValueError("`relativeOffset` attribute only belongs to source_copy and target_copy actions") 
                 elif not isinstance(kwargs.get("relativeOffset"),int): raise TypeError("`relativeOffset` must only be of type `int`") 
-                #elif not kwargs.get("relativeOffset"): raise ValueError("`relativeOffset` must be non-zero")                           #unsure
+                #with nonlocal we may be able to access the actual offset.
             self.name = kwargs.get("name",f'Unnamed {("source_read","target_read","target_copy","target_read")[operation]} at {outputOffset}')
             self.__dict__.update({**{arg: data for arg, data in locals().items() if arg in {"parent","operation","length","outputOffset"}}, **kwargs})
 
     def __init__(self, patch : bytes, checks : bool = True):
+
+
+        
 
         self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)];patch = patch[:-4]
@@ -89,11 +98,10 @@ class bps:
 
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
             operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
-            length = (operation >> 2) + 1                                                   # Determine length
+            operation,length = operation & 3,(operation >> 2) + 1                                                   # Determine length
             args = [self, length, outputOffset]                                             # Assume default args
-            if operation & 2:                                                               # If a copy function
-                relativeOffset = decode(patch[:16]);trim()                                  # Decode the modifier
-                relativeOffset = (relativeOffset >> 1) * (-1 if relativeOffset & 1 else 1)  # Process modifier
+            if operation & 2:                                                               # If a copy function (check this alot please NOT WORKING)
+                relativeOffset = decode(patch[:16], True);trim()                            # Decode the modifier
                 if operation & 1: targetRelativeOffset += relativeOffset                    # Modify Appropriate relativeOffset
                 else: sourceRelativeOffset += relativeOffset
                 args.append(targetRelativeOffset if operation & 1 else sourceRelativeOffset)# Add value to normalized data 
@@ -105,7 +113,14 @@ class bps:
             outputOffset += length                                                          # Increase variable counter to indicate 
 
             
-        self.operations = tuple(self.operations)                                            # Memory efficiency
+
+    def remove(self, operation : operation) -> dict | tuple: 
+        """
+        This code will need to alter ALOT, we must assume source_read where possible, otherwise source_copy
+        Any copy_codes will need their offset being changed in the following copy function to continue supprort.
+        All lost patched will be returned in tuple or dict
+        """
+        return None
 
         
 
@@ -116,7 +131,7 @@ def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
     if not isinstance(checks, bool): raise ValueError() 
 
 
-    target = b"";outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
+    target = b"";sourceRelativeOffset = targetRelativeOffset = 0
 
     if len(source) != patch.sourceSize and checks: raise ValueError()
     if crc32(source) != patch.source_checksum and checks: raise ValueError()
@@ -126,24 +141,27 @@ def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
 
 
 
-    def source_read(operation : bps.source_read): 
+    def source_read(operation : bps.operation): 
         nonlocal source, target
+        if len(source[operation.outputOffset:operation.outputOffset + operation.length]) != operation.length: raise Exception("Fuck")
         target += source[operation.outputOffset:operation.outputOffset + operation.length]
-    def target_read(operation : bps.target_read): 
+    def target_read(operation : bps.operation): 
         nonlocal target
+        if len(operation.data) != operation.length: raise Exception("Fuck")
         target += operation.data
-    def source_copy(operation : bps.source_copy): 
+    def source_copy(operation : bps.operation): 
         nonlocal source, target, sourceRelativeOffset
         sourceRelativeOffset += operation.relativeOffset
+        if source[sourceRelativeOffset:sourceRelativeOffset+operation.lengt]: raise Exception("Fuck")
         target += source[sourceRelativeOffset:sourceRelativeOffset+operation.length]
-    def target_copy(operation : bps.target_copy):
+    def target_copy(operation : bps.operation):
         nonlocal target, targetRelativeOffset
-        nonlocal targetRelativeOffset
         targetRelativeOffset += operation.relativeOffset
+        if len(source[sourceRelativeOffset:sourceRelativeOffset+operation.length]) != operation.length: raise Exception("Fuck")
         target += source[targetRelativeOffset:targetRelativeOffset+operation.length]
 
 
-    for operation in patch:
-        (source_read,target_read,source_copy,target_copy)[(bps.source_read,bps.target_read,bps.source_copy,bps.target_copy).index(operation.__class__)](operation)
+    for action in patch:
+        (source_read,target_read,source_copy,target_copy)[action.operation](action)
 
     return (target, patch.metadata) if hasattr(patch, "metadata") else (target,)
