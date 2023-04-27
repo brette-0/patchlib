@@ -14,20 +14,19 @@ def encode(number : int, signed : bool = False) -> bytes:
 
     if not isinstance(number,int): raise TypeError("Number data must be integer")
     if not isinstance(signed,bool): raise TypeError("sign flag must be boolean")
+    if not signed: signed = number < 0          # Determine signature if not set
     if signed: number = abs(number * 2) + (number < 0)
-    if number < 0: raise ValueError("Cannot convert negative number!")
 	
-    var_length = b""							#Create empty bytes object to store variable-width encoded bytes
-    while True:									#Until we are finished
-        x = number & 0x7f						#Using the 7 LSB of the number
-        number >>= 7							#And removing such data
-        if number: 								#If there is still source data to read
-            var_length += x.to_bytes(1, "big")	#Append such data to our bytes object
-            number -= 1							#Decrement by one to remove ambiguity
+    var_length = bytes()						# Create empty bytes object to store variable-width encoded bytes
+    while True:									# Until we are finished
+        x = number & 0x7f						# Using the 7 LSB of the number
+        number >>= 7							# And removing such data
+        if number: 								# If there is still source data to read
+            var_length += x.to_bytes(1, "big")	# Append such data to our bytes object
+            number -= 1							# Decrement by one to remove ambiguity
         else: 
-            var_length += (0x80 | x).to_bytes(1, "big")	#Set termination byte
-            break 										#Final data is wronte, leave
-    return var_length									#return our variable-width encoded data
+            var_length += (0x80 | x).to_bytes(1, "big")	# Set termination byte
+            return var_length                   # Final data is wronte, leave
 
 
 def decode(encoded : bytes, signed : bool = False) -> int:
@@ -37,14 +36,13 @@ def decode(encoded : bytes, signed : bool = False) -> int:
     if not isinstance(encoded,bytes): raise TypeError("Encoded data must be bytes object")
     if not isinstance(signed,bool): raise TypeError("sign flag must be bool object")
 
-    number = 0								    #Assume 0 for operational efficiency 
-    shift = 1
+    number, shift = 0, 1                        #Assume 0 for operational efficiency 
     for byte in encoded:					    #for each byte in our given data
         number += (byte & 0x7f) * shift		    #increase number by data bits
-        if byte & 0x80: break				    #break if termination bytes set
+        if byte & 0x80: return (number>>1)*(-1 if number & 1 else 1) if signed else number				    #break if termination bytes set
         shift <<= 7
         number += shift
-    return (number>>1)*(-1 if number & 1 else 1) if signed else number							        #return decoded number
+
 
 class bps:
     def __iter__(self): return iter(self.operations)
