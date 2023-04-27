@@ -14,7 +14,7 @@ def encode(number : int, signed : bool = False) -> bytes:
 
     if not isinstance(number,int): raise TypeError("Number data must be integer")
     if not isinstance(signed,bool): raise TypeError("sign flag must be boolean")
-    if signed: number = abs(number * 2) + number < 0
+    if signed: number = abs(number * 2) + (number < 0)
     if number < 0: raise ValueError("Cannot convert negative number!")
 	
     var_length = b""							#Create empty bytes object to store variable-width encoded bytes
