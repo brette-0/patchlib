@@ -2,6 +2,10 @@
 in-dev bps beta
 """
 
+class ChecksumMismatch(Exception): pass
+class OffsetError(Exception): pass 
+
+
 __version__ = "0.5"
 
 
@@ -20,7 +24,7 @@ def encode(number : int, signed : bool = False) -> bytes:
     var_length = bytes()						# Create empty bytes object to store variable-width encoded bytes
     while True:									# Until we are finished
         x = number & 0x7f						# Using the 7 LSB of the number
-        number >>= 7							# And removing such data
+        number >>= 7							# And removing such datagith
         if number: 								# If there is still source data to read
             var_length += x.to_bytes(1, "big")	# Append such data to our bytes object
             number -= 1							# Decrement by one to remove ambiguity
@@ -45,72 +49,91 @@ def decode(encoded : bytes, signed : bool = False) -> int:
 
 
 class bps:
+    """
+    Normalised BPS patch object
+    """
     def __iter__(self): return iter(self.operations)
     def __getitem__(self, index): return self.operations[index]
     def __setitem__(self, index, value): self.operations[index] = value
     class operation:
+        """
+        Singular BPS patch operation object
+        """
         def __del__(self): 
             self.parent.remove(self)
         def __init__(self, parent, operation : int, length : int, outputOffset : int, **kwargs : dict):
-            valid_kwargs = {"data", "relativeOffset", "name"}
-            if not all(arg in valid_kwargs for arg in kwargs): raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
+            valid_kwargs = {"data", "relativeOffset", "name"}   #Needed for fstring compatibility
+            if not all(arg in valid_kwargs for arg in {"data", "relativeOffset", "name"}):              #Invalid kwarguements being raise
+                raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
+            
+            if not isinstance(parent, bps): raise TypeError("operation must originate from bps")
             if not isinstance(length, int): raise TypeError("Length must be of type `int`")
             if length < 1: raise ValueError("length must be non-zero positive integer.")
             if not isinstance(outputOffset, int): raise TypeError("outputOffset must be of type `int`") 
             if outputOffset < 0: raise ValueError("outputOffset must be positive.")
             if not isinstance(operation,int): raise TypeError("instance indicator must of type `int`") 
-            if abs(operation & 3) != operation: raise ValueError("operation indicator must be between 0 and 3")
-            if kwargs.get("data") != None:
+            if abs(operation & 3) != operation: raise ValueError("operation indicator must be between 0 and 3") #Counters negative numbers and allows 0-3 range :0
+
+            if kwargs.get("data") != None:  #checks for target_read
                 if operation & 3 != 1: raise ValueError("`data` attribute only belongs to target_read action")                
                 elif not isinstance(kwargs.get("data"), bytes): raise TypeError("`data` must be of type `bytes`") 
-                elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")     
+                elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")    
+
             if kwargs.get("relativeOffset") != None:
                 if not operation & 2: print(operation);raise ValueError("`relativeOffset` attribute only belongs to source_copy and target_copy actions") 
                 elif not isinstance(kwargs.get("relativeOffset"),int): raise TypeError("`relativeOffset` must only be of type `int`") 
-                #with nonlocal we may be able to access the actual offset.
-            self.name = kwargs.get("name",f'Unnamed {("source_read","target_read","target_copy","target_read")[operation]} at {outputOffset}')
-            self.__dict__.update({**{arg: data for arg, data in locals().items() if arg in {"parent","operation","length","outputOffset"}}, **kwargs})
+                #with nonlocal we may be able to access the current value of relativeOffset.
+
+            self.name = kwargs.get("name",f'Unnamed {("source_read","target_read","target_copy","target_read")[operation]} at {outputOffset}')          #evaluate name
+            self.__dict__.update({**{arg: data for arg, data in locals().items() if arg in {"parent","operation","length","outputOffset"}}, **kwargs})  #attribute by pos arg, and kwarg
 
     def __init__(self, patch : bytes, checks : bool = True):
-
-
-        
-
         self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
-        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)];patch = patch[:-4]
+        self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)]
 
-
-        if crc32(patch) != int(self.patch_checksum, 16) and checks:raise ValueError(f"Expected patch with checksum {hex(crc32(patch))[2:]} but calculated checksum of {self.patch_checksum}")
-        patch = patch[4:-8]
-        
-        def trim(): nonlocal patch;patch = patch[patch.index([byte for byte in patch[:16] if byte & 128][0])+1:]#trim bps from first d0 enabled byte
+        if crc32(patch[:-4]) != int(self.patch_checksum, 16) and checks:raise ValueError(f"Expected patch with checksum {hex(crc32(patch[:-4]))[2:]} but calculated checksum of {self.patch_checksum}");patch = patch[4:-12]
+        def trim(): #trim bps from first d0 enabled byte
+            nonlocal patch 
+            temp = [byte for byte in patch[:16] if byte & 128]  
+            patch = patch[patch.index(temp[0])+1:] if patch else bytes()
 
         self.sourceSize = decode(patch[:16]);trim()                                # Decode Source Size   | read 16 bytes ahead for u128i
         self.targetSize = decode(patch[:16]);trim()                                # Decode Target Size   | read 16 bytes ahead for u128i
         self.metadataSize = decode(patch[:16]);trim()                              # Decode Metadata Size | read 16 bytes ahead for u128i
-
-
-        if self.metadataSize:
-            self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
+        if self.metadataSize: self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
 
 
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
             operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
             operation,length = operation & 3,(operation >> 2) + 1                                                   # Determine length
-            args = [self, length, outputOffset]                                             # Assume default args
+            phrase = "(self, operation, length, outputOffset)"
             if operation & 2:                                                               # If a copy function (check this alot please NOT WORKING)
                 relativeOffset = decode(patch[:16], True);trim()                            # Decode the modifier
                 if operation & 1: targetRelativeOffset += relativeOffset                    # Modify Appropriate relativeOffset
                 else: sourceRelativeOffset += relativeOffset
-                args.append(targetRelativeOffset if operation & 1 else sourceRelativeOffset)# Add value to normalized data 
-                self.operations.append(self.operation(self, operation & 3, length, outputOffset, relativeOffset = relativeOffset))
-            elif operation & 1:                                                             # If target_read
-                self.operations.append(self.operation(self, 1, length, outputOffset, data = patch[:length]));patch = patch[length:]                          # Append the actual data and trim patch accordingly
-            else:
-                self.operations.append(self.operation(self, 0, length, outputOffset))
+            self.operations.append(self.operation(*eval(phrase), relativeOffset = relativeOffset if operation & 2 else None, data = patch[:length] if operation == 1 else None))
+            if operation & 3 == 1: patch = patch[length:]
             outputOffset += length                                                          # Increase variable counter to indicate 
 
-            
+    def to_bytes(self, source : bytes = None, metadata : bool = True) -> bytes:
+        """
+        Processes BPS object into raw BPS file
+        """
+        #metadata is a flag for including it in conversion or not
+        #use sourceSize and checksum, this would also determine target (perhaps the result on last-modification can be stored in self?)
+        raw = bytes()
+        for item in (self.sourceSize,self.targetSize,self.metadataSize if metadata else 0): 
+            raw += encode(item) 
+        if self.metadataSize and metadata: raw += self.metadata 
+        for oper in self:
+            raw += encode(oper.length << 2 + oper.operation)
+            if oper.operation & 2:
+                raw += encode(oper.relativeOffset, True) 
+            elif oper.operation & 1:
+                raw += oper.data 
+        for item in (crc32(source),self.apply(self, source)) if source else (self.source_checksum,self.target_checksum):
+            raw += int(item,16).to_bytes(4, "little")
+        return b"BPS1"+raw+crc32(raw).to_bytes(4, "little")
 
     def remove(self, operation : operation) -> dict | tuple: 
         """
