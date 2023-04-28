@@ -23,15 +23,17 @@ In order to understand `bps` adequatly we need to understand the concept of `var
 
 ### `variable-width encoding`
 ```python
-def encode(number : int) -> bytes:
+def encode(number : int, signed : bool = False) -> bytes:
     """
 	Convert number into variable-width encoded bytes
     """
 
     if not isinstance(number,int): raise TypeError("Number data must be integer")
-    if number < 0: raise ValueError("Cannot convert negative number!")
+    if not isinstance(signed,bool): raise TypeError("sign flag must be boolean")
+    if not signed: signed = number < 0  #set sign flag if needed
+    if signed: number = abs(number * 2) + (number < 0)
 	
-    var_length = b""							#Create empty bytes object to store variable-width encoded bytes
+    var_length = bytes()							#Create empty bytes object to store variable-width encoded bytes
     while True:									#Until we are finished
         x = number & 0x7f						#Using the 7 LSB of the number
         number >>= 7							#And removing such data
@@ -40,25 +42,22 @@ def encode(number : int) -> bytes:
             number -= 1							#Decrement by one to remove ambiguity
         else: 
             var_length += (0x80 | x).to_bytes(1, "big")	#Set termination byte
-            break 										#Final data is wronte, leave
-    return var_length									#return our variable-width encoded data
+            return var_length 	#return result
 ```
 ### `variable-width decoding`
 ```python
-def decode(encoded : bytes) -> int:
+def decode(encoded : bytes, signed : bool = False) -> int:
     """
 	Decode variable-width encoded bytes into unsinged integer
     """
     if not isinstance(encoded,bytes): raise TypeError("Encoded data must be bytes object")
 
-    number = 0								    #Assume 0 for operational efficiency 
-    shift = 1
+    number,shift = 0, 1
     for byte in encoded:					    #for each byte in our given data
         number += (byte & 0x7f) * shift		    #increase number by data bits
-        if byte & 0x80: break				    #break if termination bytes set
+        if byte & 0x80: return (number>>1)*(-1 if number & 1 else 1) if signed else number				    #break if termination bytes set
         shift <<= 7
         number += shift
-    return number							    #return decoded number
 ```
 
 These functions are superior in general functionality to streamlines `bytesIO` operations granted that we can interact with uncontexutal information and do not need a file to process such operations. In the solution above the data is all numerical and therefore we can rationally understand that if passed more than `16 bytes` to `decode` we would get an unfeasibly large number which Python likely would handle internally.
