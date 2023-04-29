@@ -63,7 +63,7 @@ class bps:
             self.parent.remove(self)
         def __init__(self, parent, operation : int, length : int, outputOffset : int, **kwargs : dict):
             valid_kwargs = {"data", "relativeOffset", "name"}   #Needed for fstring compatibility
-            if not all(arg in valid_kwargs for arg in {"data", "relativeOffset", "name"}):              #Invalid kwarguements being raise
+            if not all(arg in valid_kwargs for arg in valid_kwargs):              #Invalid kwarguements being raise
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
             
             if not isinstance(parent, bps): raise TypeError("operation must originate from bps")
@@ -87,25 +87,27 @@ class bps:
             self.name = kwargs.get("name",f'Unnamed {("source_read","target_read","target_copy","target_read")[operation]} at {outputOffset}')          #evaluate name
             self.__dict__.update({**{arg: data for arg, data in locals().items() if arg in {"parent","operation","length","outputOffset"}}, **kwargs})  #attribute by pos arg, and kwarg
 
-    def __init__(self, patch : bytes, checks : bool = True):
+    def __init__(self, patch : bytes, checks : bool = True, metadata : bool = True):
         self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)]
 
-        if crc32(patch[:-4]) != int(self.patch_checksum, 16) and checks:raise ValueError(f"Expected patch with checksum {hex(crc32(patch[:-4]))[2:]} but calculated checksum of {self.patch_checksum}");patch = patch[4:-12]
+        if crc32(patch[:-4]) != int(self.patch_checksum, 16) and checks:raise ChecksumMismatch(f"Expected patch with checksum {hex(crc32(patch[:-4]))[2:]} but calculated checksum of {self.patch_checksum}")
+        patch = patch[4:-12]
         def trim(): #trim bps from first d0 enabled byte
             nonlocal patch 
             temp = [byte for byte in patch[:16] if byte & 128]  
             patch = patch[patch.index(temp[0])+1:] if patch else bytes()
 
+
         self.sourceSize = decode(patch[:16]);trim()                                # Decode Source Size   | read 16 bytes ahead for u128i
         self.targetSize = decode(patch[:16]);trim()                                # Decode Target Size   | read 16 bytes ahead for u128i
-        self.metadataSize = decode(patch[:16]);trim()                              # Decode Metadata Size | read 16 bytes ahead for u128i
-        if self.metadataSize: self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
+        self.metadataSize = decode(patch[:16]) if metadata else 0;trim()           # Decode Metadata Size | read 16 bytes ahead for u128i
+        if self.metadataSize and metadata: self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
 
 
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
             operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
-            operation,length = operation & 3,(operation >> 2) + 1                                                   # Determine length
+            operation,length = operation & 3,(operation >> 2) + 1                           # Determine length
             phrase = "(self, operation, length, outputOffset)"
             if operation & 2:                                                               # If a copy function (check this alot please NOT WORKING)
                 relativeOffset = decode(patch[:16], True);trim()                            # Decode the modifier
@@ -115,25 +117,27 @@ class bps:
             if operation & 3 == 1: patch = patch[length:]
             outputOffset += length                                                          # Increase variable counter to indicate 
 
-    def to_bytes(self, source : bytes = None, metadata : bool = True) -> bytes:
+    def to_bytes(self, source : bytes = None, checls : bool = True, metadata : bool = True) -> bytes:
         """
         Processes BPS object into raw BPS file
         """
         #metadata is a flag for including it in conversion or not
         #use sourceSize and checksum, this would also determine target (perhaps the result on last-modification can be stored in self?)
-        raw = bytes()
+        raw = b"BPS1"
+        print((self.sourceSize,self.targetSize,self.metadataSize if metadata else 0))
         for item in (self.sourceSize,self.targetSize,self.metadataSize if metadata else 0): 
             raw += encode(item) 
+        print(self.metadataSize and metadata)
         if self.metadataSize and metadata: raw += self.metadata 
         for oper in self:
-            raw += encode(oper.length << 2 + oper.operation)
+            raw += encode(((oper.length -1) << 2) + oper.operation)
             if oper.operation & 2:
                 raw += encode(oper.relativeOffset, True) 
             elif oper.operation & 1:
                 raw += oper.data 
-        for item in (crc32(source),self.apply(self, source)) if source else (self.source_checksum,self.target_checksum):
+        for item in (crc32(source),crc32(self.apply(self, source))) if source else (self.source_checksum,self.target_checksum):
             raw += int(item,16).to_bytes(4, "little")
-        return b"BPS1"+raw+crc32(raw).to_bytes(4, "little")
+        return raw+crc32(raw).to_bytes(4, "little")
 
     def remove(self, operation : operation) -> dict | tuple: 
         """
@@ -145,44 +149,32 @@ class bps:
 
         
 
-def apply(patch : bps, source : bytes, checks : bool = True) -> tuple:
+def apply(patch : bps, source : bytes, checks : bool = True, metadata : True = False) -> bytes | tuple:
+    """
+    Applies BPS object to provided source file
+    """
 
-    if not isinstance(patch, bps): raise ValueError() 
-    if not isinstance(source, bytes): raise ValueError()
-    if not isinstance(checks, bool): raise ValueError() 
+    if not isinstance(patch, bps): raise ValueError("Patch must be normalized `bps` object") 
+    if not isinstance(source, bytes): raise ValueError("Source must be `bytes` object")
+    if not isinstance(checks, bool): raise ValueError("Checks flag must be set to boolean value") 
+    if not isinstance(metadata, bool): raise ValueError("metadata flag must be set to boolean value") 
 
+    if len(source) != patch.sourceSize and checks: raise ValueError(f"Expected source with size {patch.sourceSize} but calculated checksum of {len(source)}")
+    if crc32(source) != patch.source_checksum and checks: raise ChecksumMismatch(f"Expected source with checksum {patch.source_checksum} but calculated checksum of {crc32(source)}")
 
-    target = b"";sourceRelativeOffset = targetRelativeOffset = 0
+    target = bytes();sourceRelativeOffset = targetRelativeOffset = 0
 
-    if len(source) != patch.sourceSize and checks: raise ValueError()
-    if crc32(source) != patch.source_checksum and checks: raise ValueError()
-    #patch corruption mechanic lost - but is that a bad thing entirely?
-    if crc32(target) != patch.target_checksum and checks: raise ValueError() 
-    if len(target) != patch.targetSize and checks: raise ValueError()   #potentially redudant?
+    for action in patch: 
+        if action.operation == 3:
+            targetRelativeOffset += action.relativeOffset 
+            target += target[targetRelativeOffset:targetRelativeOffset+action.length]
+        elif action.operation == 2:
+            sourceRelativeOffset += action.relativeOffset 
+            target += source[sourceRelativeOffset:sourceRelativeOffset+action.length]
+        elif action.operation == 1: target += action.data 
+        else: target += source[action.outputOffset:action.outputOffset+action.length]
 
-
-
-    def source_read(operation : bps.operation): 
-        nonlocal source, target
-        if len(source[operation.outputOffset:operation.outputOffset + operation.length]) != operation.length: raise Exception("Fuck")
-        target += source[operation.outputOffset:operation.outputOffset + operation.length]
-    def target_read(operation : bps.operation): 
-        nonlocal target
-        if len(operation.data) != operation.length: raise Exception("Fuck")
-        target += operation.data
-    def source_copy(operation : bps.operation): 
-        nonlocal source, target, sourceRelativeOffset
-        sourceRelativeOffset += operation.relativeOffset
-        if source[sourceRelativeOffset:sourceRelativeOffset+operation.lengt]: raise Exception("Fuck")
-        target += source[sourceRelativeOffset:sourceRelativeOffset+operation.length]
-    def target_copy(operation : bps.operation):
-        nonlocal target, targetRelativeOffset
-        targetRelativeOffset += operation.relativeOffset
-        if len(source[sourceRelativeOffset:sourceRelativeOffset+operation.length]) != operation.length: raise Exception("Fuck")
-        target += source[targetRelativeOffset:targetRelativeOffset+operation.length]
-
-
-    for action in patch:
-        (source_read,target_read,source_copy,target_copy)[action.operation](action)
-
-    return (target, patch.metadata) if hasattr(patch, "metadata") else (target,)
+    if patch[-1].outputOffset + patch[-1].length != patch.targetSize and checks: raise ValueError(f"Expected target with size {patch.targetSize} but discovered file with size {len(target)}")
+    if crc32(source) != patch.source_checksum and checks: 
+        raise ChecksumMismatch(f"Expected source with checksum {patch.source_checksum} but calculated checksum of {crc32(source)}")
+    return ((target, patch.metadata) if hasattr(patch, "metadata") else (target,)) if metadata else target
