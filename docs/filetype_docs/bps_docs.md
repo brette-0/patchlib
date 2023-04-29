@@ -55,7 +55,7 @@ def decode(encoded : bytes, signed : bool = False) -> int:
     number,shift = 0, 1
     for byte in encoded:					    #for each byte in our given data
         number += (byte & 0x7f) * shift		    #increase number by data bits
-        if byte & 0x80: return (number>>1)*(-1 if number & 1 else 1) if signed else number				    #break if termination bytes set
+        if byte & 0x80: return (number>>1)*(-1 if number & 1 else 1) if signed else number				    #return if termination bytes set
         shift <<= 7
         number += shift
 ```
@@ -91,10 +91,11 @@ predetermined:
     target  |   resultant bytearray
     length  |   length of operation 
     relativeOffset  |   Offset used for LZ Compression
-    outputOffset    |   Offset used for writing to `target`
+    outputOffset    |   Offset used for writing to target
 """
-while len(patch): #code to interpret what function to call on
-    operation = decode(patch[:16]);patch = trim()       #The entirety of the operation data
+while len(patch): 
+    #code to interpret what function to call on
+    operation = decode(patch[:16]);patch = trim()                       #The entirety of the operation data
     (source_read,target_read,source_copy,target_copy)[operation & 3]()  #Function determined by indexing with 2 LSB of Operation
     
 ```
@@ -110,20 +111,21 @@ The length is whatever is stored left in the data, in this case it is `533908`.
 ```python
 def source_read() -> None:
     nonlocal length,source,target,outputOffset      #Code to retrieve predetermined arguements
-    target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]     #Write in `target` bytearray a range in `source`
+    target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]     
+    #Copy data form source to target
 ```
 
 ### **Example of a TargetRead action:**
 
-`41 3d 6a 80`
+`We need better example here` 
 
-This functions quite similarly to `SourceRead`, accessing `length` the same way as before, but instead of reading from the `source` file we read onwards `length` bytes into the `patch` like `ips`. After accessing the `operation` as 1, we then shift two bits to the right to access the lenght of `964561` which is how far we will read into the `patch`.
+[redo this entirely]
 
 ```python
 def target_read() -> None:
-    nonlocal length, patch, target, outputOffset #Code to retrieve predetermined arguements
-    target[outputOffset:outputOffset+length] = patch[:length] #Write in `target` bytearray a range in `patch`
-    patch = patch[length:] #trim patch data from patch
+    nonlocal length, patch, target, outputOffset                #Code to retrieve predetermined arguements
+    target[outputOffset:outputOffset+length] = patch[:length]   #Write in `target` bytearray a range in `patch`
+    patch = patch[length:]                                      #trim patch data from patch
 ```
 
 ### **Example of a SourceCopy action:**
@@ -138,10 +140,12 @@ In the first split we have the common instruction and lenth data, but then we al
 
 ```python
 def source_copy() -> None:
-    nonlocal length, source, patch, target, outputOffset                                    #Code to retrieve predetermined arguements
-    data = decode(patch[:16]);trim()  #code to access the signed relativeOffset
+    #Code to retrieve predetermined arguements
+    nonlocal length, source, patch, target, outputOffset                                    
+    data = decode(patch[:16]);trim()                        #code to access the signed relativeOffset
     relativeOffset = (data >> 1) * (-1 if data & 1 else 1)  #processing signed data into legible form
-    target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length] #applying said data in the target
+    target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length]
+    #copy source from different offset into target
 ```
 
 ### **Example of a TargetCopy action:**
@@ -156,10 +160,12 @@ This code works functionally the same as `source_copy` but refers to the `target
 
 ```python
 def target_copy() -> None:
-    nonlocal length, patch, target, outputOffset                                    #Code to retrieve predetermined arguements
-    data = decode(patch[:16]);trim() #code to access the signed relativeOffset
+    #Code to retrieve predetermined arguements
+    nonlocal length, patch, target, outputOffset                                    
+    data = decode(patch[:16]);trim()                        #code to access the signed relativeOffset
     relativeOffset = (data >> 1) * (-1 if data & 1 else 1)  #processing signed data into legible form
-    target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] #applying said data in the target
+    target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length]
+    #appending accessed target data in target
 ```
 
 We use `nonlocal` to access length due to how it is predetermined during `action` identification. We also `nonlocal target` as to modify pre-existing data and not interact with a new object. Finally we `nonlocal` either `source`, `patch` or both so we do not duplicate the data in memory.
@@ -172,44 +178,37 @@ Here it will be demonstrated in very simple Python, but annotated well even when
 
 ```python
 def apply(patch : bytes, source : bytes) -> bytes:
-    target = bytearray(source); outputOffset = 0
+    target = bytes(); outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
     source_checksum, target_checksum, patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)];patch = patch[4:-12]
     sourceSize = decode(patch[:16]); patch = trim()
     targetSize = decode(patch[:16]); patch = trim()
     metadataSize = decode(patch[:16]); patch = trim()
-    if metadataSize:
-        metadata = patch[:metadataSize];patch = patch[metadataSize:]
+    
+    if metadataSize: metadata = patch[:metadataSize];patch = patch[metadataSize:]
     else: metadata = None
-
-    def source_read() -> None:
-        nonlocal length,source,target,outputOffset
-        target[outputOffset:outputOffset+length] = source[outputOffset:outputOffset+length]
-        outputOffset += length
-    
-    def target_read() -> None:
-        nonlocal length, patch, target, outputOffset
-        target[outputOffset:outputOffset+length] = patch[:length]
-        patch = patch[length:]
-    
-    def source_copy() -> None:
-        nonlocal length, source, patch, target, outputOffset
-        data = decode(patch[:16]);trim() 
-        relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-        target[outputOffset:outputOffset+length] = source[relativeOffset:relativeOffset+length]
-    
-    def target_copy() -> None:
-        nonlocal length, patch, target, outputOffset
-        data = decode(patch[:16]);trim() 
-        relativeOffset = (data >> 1) * (-1 if data & 1 else 1)
-        target[outputOffset:outputOffset+length] = target[relativeOffset:relativeOffset+length] 
 
     while len(patch):
         operation = decode(patch[:16]);trim()
-        length = (operation >> 2) + 1  
-        (source_read,target_read,source_copy,target_copy)[operation & 3]()
-        outputOffset += length
+        length, operation = (operation >> 2) + 1, operation & 3
+        if operation == 3:
+            relativeOffset = decode(patch[:16], True);trim()
+            targetRelativeOffset += relativeOffset
+            target += target[targetRelativeOffset:targetRelativeOffset+length]
 
-    return bytes(target)
+        elif operation == 2:
+            relativeOffset = decode(patch[:16], True);trim()
+            sourcetRelativeOffset += relativeOffset
+            source += source[sourcetRelativeOffset:sourcetRelativeOffset+length]
+
+        elif operation == 1:
+            target += patch[:length]
+            patch = patch[length:]
+
+        else:
+            target += source[outputOffset:outputOffste+length]
+        outputOffset += length
+        
+    return target, metadata
 ```
 The code above accepts two `bytes` objects and will return ` bytes` object which could be parsed into a `file` object.  If you only needed this data for patching then you could :
 ```python

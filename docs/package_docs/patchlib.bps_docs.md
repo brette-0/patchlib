@@ -21,28 +21,16 @@ with open("Curse of Cthulu.bps","rb") as f:
 
 mod = bps(mod)				#construct `ips` object from file
 ```
-We pass the `bytearray` into the constructor, and can specify whether or not this `bps` object should include metadata or undergo validity checks. Set to `True` by default the `optional` positional `arg` `checks` executs some length and checksum comparisons. Since a `bps` is just a series of `operations`, the methods within the `ips` class are just for `operation` handling:
+We pass the `bytearray` into the constructor, and can specify whether or not this `bps` object should include metadata or undergo validity checks. Set to `True` by default the `optional` positional `arg` `checks` executs some length and checksum comparisons. Since a `bps` is just a series of `operations`, the methods within the `bps` class are just for `operation` handling:
 ```python
-#retrieve multiple offsets within a range
-
-header = mod.range(end=16)		#here we retrieve all operations up to the 16th byte
-PRG = mod.range(16,0x8010)		#here we retrieve all operations from 16 to 0x8010
-CHR = mod.range(0x8010)			#here we retrieve all operations from 0x8010 to the end
-
-#retrieve an instance from offset, or many with a shared or unique name
-mod.get(1622)					#retrieve instance starting at offset 1622
-mod.get("unnamed source_read operation at 14 - 30 | 16")
+#unplanned retrieval code
 ```
 
 [Discuss name generation]
 
 An `operation` may also be created and removed from an `ips`:
 ```python
-#This code will insert the bytearray b"Example" at 1234
-mod.create(offset = 1234, data = b"Example")
-
-#or with rle...
-mod.create(offset = 1234, data = (10, b"E"))
+#unplanned creation code
 ```
 [Discuss means of overwriting (needed with bps)]
 ```python
