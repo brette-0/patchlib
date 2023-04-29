@@ -80,7 +80,7 @@ class bps:
                 elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")    
 
             if kwargs.get("relativeOffset") != None:
-                if not operation & 2: print(operation);raise ValueError("`relativeOffset` attribute only belongs to source_copy and target_copy actions") 
+                if not operation & 2: raise ValueError("`relativeOffset` attribute only belongs to source_copy and target_copy actions") 
                 elif not isinstance(kwargs.get("relativeOffset"),int): raise TypeError("`relativeOffset` must only be of type `int`") 
                 #with nonlocal we may be able to access the current value of relativeOffset.
 
@@ -117,17 +117,15 @@ class bps:
             if operation & 3 == 1: patch = patch[length:]
             outputOffset += length                                                          # Increase variable counter to indicate 
 
-    def to_bytes(self, source : bytes = None, checls : bool = True, metadata : bool = True) -> bytes:
+    def to_bytes(self, source : bytes = None, checks : bool = False, metadata : bool = True) -> bytes:
         """
         Processes BPS object into raw BPS file
         """
         #metadata is a flag for including it in conversion or not
         #use sourceSize and checksum, this would also determine target (perhaps the result on last-modification can be stored in self?)
         raw = b"BPS1"
-        print((self.sourceSize,self.targetSize,self.metadataSize if metadata else 0))
         for item in (self.sourceSize,self.targetSize,self.metadataSize if metadata else 0): 
             raw += encode(item) 
-        print(self.metadataSize and metadata)
         if self.metadataSize and metadata: raw += self.metadata 
         for oper in self:
             raw += encode(((oper.length -1) << 2) + oper.operation)
@@ -164,15 +162,22 @@ def apply(patch : bps, source : bytes, checks : bool = True, metadata : True = F
 
     target = bytes();sourceRelativeOffset = targetRelativeOffset = 0
 
+    debug_count = 0
+
     for action in patch: 
         if action.operation == 3:
             targetRelativeOffset += action.relativeOffset 
-            target += target[targetRelativeOffset:targetRelativeOffset+action.length]
+            if targetRelativeOffset+action.length > len(target)-1: raise Exception("we fucked up")
+            target += target[targetRelativeOffset:targetRelativeOffset+action.length]   #this code not work at all the length flaw was found here
+            debug_count += len(target[targetRelativeOffset:targetRelativeOffset+action.length])
         elif action.operation == 2:
             sourceRelativeOffset += action.relativeOffset 
             target += source[sourceRelativeOffset:sourceRelativeOffset+action.length]
-        elif action.operation == 1: target += action.data 
-        else: target += source[action.outputOffset:action.outputOffset+action.length]
+            debug_count += action.length
+        elif action.operation == 1: target += action.data ; debug_count += len(action.data)
+        else: target += source[action.outputOffset:action.outputOffset+action.length]; debug_count += len(source[action.outputOffset:action.outputOffset+action.length])
+
+    print(debug_count)
 
     if patch[-1].outputOffset + patch[-1].length != patch.targetSize and checks: raise ValueError(f"Expected target with size {patch.targetSize} but discovered file with size {len(target)}")
     if crc32(source) != patch.source_checksum and checks: 
