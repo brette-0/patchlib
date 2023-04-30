@@ -15,7 +15,7 @@ Or can be installed with:
 |Name | package |Docs| Version| Module Size | File Docs|
 |--|--|--|--|--|--|
 |IPS|[`patchlib.ips`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py)| [patchlib.ips](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/package_docs/patchlib.ips_docs.md) |0.9|16.464 KB |[IPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/filetype_docs/ips_docs.md) |
-|BPS|[`patchlib.bps`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/bps/__init__.py)|Not yet|0.5|8.74 KB|None
+|BPS|[`patchlib.bps`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/bps/__init__.py)|[patchlib.bps](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/package_docs/patchlib.bps_docs.md)|0.6|11.2 KB|[BPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/filetype_docs/bps_docs.md)
 |Xdelta|[`patchlib.xdelta`]()|Not yet|None|None|None
 |PPF|[`patchlib.ppf`]()|Not yet|None|None|None
 |UPS|[`patchlib.ups`]()|Not yet|None|None|None
