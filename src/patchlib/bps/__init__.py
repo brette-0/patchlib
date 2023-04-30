@@ -2,8 +2,7 @@
 in-dev bps beta
 """
 
-class ChecksumMismatch(Exception): pass
-class OffsetError(Exception): pass 
+class ChecksumMismatch(Exception): pass 
 
 
 __version__ = "0.5"
@@ -108,12 +107,14 @@ class bps:
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
             operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
             operation,length = operation & 3,(operation >> 2) + 1                           # Determine length
-            phrase = "(self, operation, length, outputOffset)"
             if operation & 2:                                                               # If a copy function (check this alot please NOT WORKING)
                 relativeOffset = decode(patch[:16], True);trim()                            # Decode the modifier
                 if operation & 1: targetRelativeOffset += relativeOffset                    # Modify Appropriate relativeOffset
                 else: sourceRelativeOffset += relativeOffset
-            self.operations.append(self.operation(*eval(phrase), relativeOffset = relativeOffset if operation & 2 else None, data = patch[:length] if operation == 1 else None))
+                if targetRelativeOffset > outputOffset: raise Exception(outputOffset)       # Is never raised
+            self.operations.append(self.operation(self, operation, length, outputOffset, 
+                                                  relativeOffset = relativeOffset if operation & 2 else None, 
+                                                  data = patch[:length] if operation == 1 else None))
             if operation & 3 == 1: patch = patch[length:]
             outputOffset += length                                                          # Increase variable counter to indicate 
 
@@ -167,7 +168,7 @@ def apply(patch : bps, source : bytes, checks : bool = True, metadata : True = F
     for action in patch: 
         if action.operation == 3:
             targetRelativeOffset += action.relativeOffset 
-            if targetRelativeOffset+action.length > len(target)-1: raise Exception("we fucked up")
+            if targetRelativeOffset+action.length >= len(target)-1: raise Exception("we messed up")
             target += target[targetRelativeOffset:targetRelativeOffset+action.length]   #this code not work at all the length flaw was found here
             debug_count += len(target[targetRelativeOffset:targetRelativeOffset+action.length])
         elif action.operation == 2:
