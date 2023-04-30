@@ -102,11 +102,9 @@ while len(patch):
 
 ### **Example of a SourceRead action:**
 
-`4c 2b 01 80`
+`4c 8e`
 
-Doesn't look like much does it? Well, first we need to `decode` the data. We then get `2135628` of which the 2LSB represent the action, which in the case of `sourceRead` is 0. Finall we shift the data two bits to the right and increment by one to retrieve the `length` of the operation.
-
-The length is whatever is stored left in the data, in this case it is `533908`.
+While this may not look like much at all, it should be noted that this feature is made redundant in `ips`. *However* this is **crucial** in `bps` construction as this negates the need for a stored offset value per-operation. The data `4c 8e` is decoded into `1996` and then by order of operation we deduce a length of `500`.
 
 ```python
 def source_read() -> None:
@@ -117,9 +115,13 @@ def source_read() -> None:
 
 ### **Example of a TargetRead action:**
 
-`We need better example here` 
+`8d 14 07 75 b6` 
 
-[redo this entirely]
+This here stores both the operation instructions, and operation data. To make that easier let's break it down:
+
+`8d | 14 07 75 b6`
+
+The first byte is `variabl-width`, we can see clearly here that the value of this operation is `13`, meaning that after processing we have a length of `4`. This operation will then store said `4` "data bytes" at the `outputOffset`.
 
 ```python
 def target_read() -> None:
@@ -130,11 +132,11 @@ def target_read() -> None:
 
 ### **Example of a SourceCopy action:**
 
-`62 35 4b 83 31 7e 64 a8`
+`1e 85 00 08 f9`
 
 To make that easier to read, let's break it down.
 
-`62 35 4b 83 | 31 7e 64 a8`
+`1e 85 | 00 08 f9`
 
 In the first split we have the common instruction and lenth data, but then we also must decode additional data which includes a signed value used for relative copying. This signed value has the signature stored in the LSB used to copy data from the source to the target at different offsets.
 
@@ -150,11 +152,11 @@ def source_copy() -> None:
 
 ### **Example of a TargetCopy action:**
 
-`5a 14 23 80 4e 41 70 84`
+`2f 88 40 03 bc`
 
 To make that easier to read, let's break it down.
 
-`5a 14 23 80 | 4e 41 70 84`
+`2f 88 | 40 03 bc`
 
 This code works functionally the same as `source_copy` but refers to the `target`. This is used when identical instances of mod-exclusive data exists in the `target` that can be stored as one and duplicated.
 
