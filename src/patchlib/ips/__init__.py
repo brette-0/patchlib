@@ -269,7 +269,8 @@ def build(base : bytes, target : bytes, legacy : bool = True) -> bytes:
     if not isinstance(base, bytes): raise TypeError("`base` must be type `bytes`")  
     if not isinstance(target, bytes): raise TypeError("'target' must be type 'bytes'")  
     if not isinstance(legacy, bool): raise TypeError("'legacy' myst be type 'bool'")  
-
+    
+    if len(source) -1 > (0xFFFFFF if legacy else 0x100FFFE): raise ScopeError("Source file exceeds IPS limitations!") 
     if len(target) -1 > (0xFFFFFF if legacy else 0x100FFFE): raise ScopeError("Target file exceeds IPS limitations!") 
     if len(base) > len(target): raise ScopeError("Target file must not be smaller than base file!")
     patch,count = b"", 0   
