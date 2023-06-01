@@ -80,7 +80,7 @@ class ips:
             if not isinstance(name, str) and not name is None: raise TypeError("`name` must be type `string`")
             if not isinstance(offset, int): raise TypeError("`offset` must be type `int`")
             elif offset < 0: raise ScopeError("`offset` must be a positive integer") 
-            elif offset > (0xFFFFFF if self.legacy else 0x100FFFE): raise ScopeError("`offset` must be within scope")
+            elif offset > 0xFFFFFF: raise ScopeError("`offset` must be within scope")
             if not isinstance(data, bytes):
                 if isinstance(data, tuple):
                     rle = True
