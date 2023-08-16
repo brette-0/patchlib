@@ -5,3 +5,4 @@ docs/.vscode
 get_patchlib.egg-info
 src/get_patchlib.egg-info
 build
+setup.py

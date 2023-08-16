@@ -1,15 +1,16 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
-    
     name="get_patchlib",
-    module = "patchlib",
-    version="1.0",
+    #packages=["patchlib"],
+    package_dir={"": "src"},
+    version="1.1",
     description="Patch file handler",
+    author="Brette",
+    keywords="Patch file handler",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/BrettefromNesUniverse/patchlib",
-    packages=find_packages(exclude=['docs']),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -20,7 +21,6 @@ setup(
     extras_require={
     "docs": [
         "sphinx",
-        # other documentation dependencies
-    ]
-}
+        ]
+    }
 )
