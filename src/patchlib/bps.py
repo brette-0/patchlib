@@ -23,9 +23,9 @@ def encode(number : int, signed : bool = False) -> bytes:
     var_length = bytes()						# Create empty bytes object to store variable-width encoded bytes
     while True:									# Until we are finished
         x = number & 0x7f						# Using the 7 LSB of the number
-        number >>= 7							# And removing such datagith
+        number >>= 7							# And removing the data
         if number: 								# If there is still source data to read
-            var_length += x.to_bytes(1, "big")	# Append such data to our bytes object
+            var_length += x.to_bytes(1, "big")	# Append the data to our bytes object
             number -= 1							# Decrement by one to remove ambiguity
         else: 
             var_length += (0x80 | x).to_bytes(1, "big")	# Set termination byte
@@ -65,16 +65,20 @@ class bps:
             if not all(arg in valid_kwargs for arg in valid_kwargs):              #Invalid kwarguements being raise
                 raise ValueError(f"Invalid arguments provided: {set(kwargs.keys()) - valid_kwargs}")
             
+            
+            """
+            Validates by object size and type. 
+            """
             if not isinstance(parent, bps): raise TypeError("operation must originate from bps")
             if not isinstance(length, int): raise TypeError("Length must be of type `int`")
-            if length < 1: raise ValueError("length must be non-zero positive integer.")
             if not isinstance(outputOffset, int): raise TypeError("outputOffset must be of type `int`") 
+            if not isinstance(operation,int): raise TypeError("instance indicator must of type `int`")
+            if length < 1: raise ValueError("length must be non-zero positive integer.")
             if outputOffset < 0: raise ValueError("outputOffset must be positive.")
-            if not isinstance(operation,int): raise TypeError("instance indicator must of type `int`") 
             if abs(operation & 3) != operation: raise ValueError("operation indicator must be between 0 and 3") #Counters negative numbers and allows 0-3 range :0
-
+            
             if kwargs.get("data") != None:  #checks for target_read
-                if operation & 3 != 1: raise ValueError("`data` attribute only belongs to target_read action")                
+                if operation - 1: raise ValueError("`data` attribute only belongs to target_read action")                
                 elif not isinstance(kwargs.get("data"), bytes): raise TypeError("`data` must be of type `bytes`") 
                 elif not len(kwargs.get("data")): raise ValueError("`data` must be of non-zero length")    
 
@@ -90,20 +94,23 @@ class bps:
         self.operations = [];outputOffset = sourceRelativeOffset = targetRelativeOffset = 0
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)]
 
+
+        # Calculate checksum of encoded contents
         if crc32(patch[:-4]) != int(self.patch_checksum, 16) and checks:raise ChecksumMismatch(f"Expected patch with checksum {hex(crc32(patch[:-4]))[2:]} but calculated checksum of {self.patch_checksum}")
         patch = patch[4:-12]
+        
         def trim(): #trim bps from first d0 enabled byte
             nonlocal patch 
             temp = [byte for byte in patch[:16] if byte & 128]  
             patch = patch[patch.index(temp[0])+1:] if patch else bytes()
 
-
+        # Acess all crucial metadata
         self.sourceSize = decode(patch[:16]);trim()                                # Decode Source Size   | read 16 bytes ahead for u128i
         self.targetSize = decode(patch[:16]);trim()                                # Decode Target Size   | read 16 bytes ahead for u128i
         self.metadataSize = decode(patch[:16]) if metadata else 0;trim()           # Decode Metadata Size | read 16 bytes ahead for u128i
         if self.metadataSize and metadata: self.metadata = patch[:self.metadataSize];patch = patch[self.metadataSize:]     # Gather Metadata as bytearray (should be xml | may not be)
 
-
+        # while some of the patch is uninterpreted
         while self.targetSize-outputOffset:                                                 # While there is still data subject to normalisation
             operation = decode(patch[:16]);trim()                                           # Decode operation  | read 16 bytes ahead for u128i
             operation,length = operation & 3,(operation >> 2) + 1                           # Determine length
@@ -126,12 +133,12 @@ class bps:
         #use sourceSize and checksum, this would also determine target (perhaps the result on last-modification can be stored in self?)
         raw = b"BPS1"
         for item in (self.sourceSize,self.targetSize,self.metadataSize if metadata else 0): 
-            raw += encode(item) 
+            raw += encode(item, signed = False) 
         if self.metadataSize and metadata: raw += self.metadata 
         for oper in self:
             raw += encode(((oper.length -1) << 2) + oper.operation)
             if oper.operation & 2:
-                raw += encode(oper.relativeOffset, True) 
+                raw += encode(oper.relativeOffset, signed = True) 
             elif oper.operation & 1:
                 raw += oper.data 
         for item in (crc32(source),crc32(self.apply(self, source))) if source else (self.source_checksum,self.target_checksum):
@@ -145,6 +152,46 @@ class bps:
         All lost patched will be returned in tuple or dict
         """
         return None
+    
+    def get(self, discriminator : str | int, operationtype : int | str = None, relative : int = None):
+        if not isinstance(discriminator, (str, int)):
+            raise TypeError("`discriminator` must be type `str` or `int`")
+        if operationtype != None: 
+            if isinstance(operationtype, int):
+                if operationtype > 3: raise ValueError("`operationtype` cannot be greater than 3")
+                elif operationtype < 0: raise ValueError("`operationtype` cannot be less than 0")
+            try: 
+                operationtype = ("source_read","target_read","target_copy","target_read").index(operationtype)
+            except IndexError:
+                raise ValueError("Invalid `operationtype` name.")
+            if relative != None and not operationtype & 0x2: raise ValueError("Specified Operation Type does not have relative offset property")
+        
+        target = [oper for oper in self.operations if (True if operationtype == None else oper.operation == operationtype)]
+        hasrel = "(discriminator in {oper.offset, oper.name} or relative == oper.RelativeOffset)"
+        no_rel = "discriminator in {oper.offset, oper.name}"
+        return [oper for oper in target if eval(no_rel, hasrel)[relative]]
+         
+         
+    def range(self,start : int = 0, end : int = None) -> bytes: 
+        """
+        Retrieves all existing instances within a specified range of offsets
+        """
+
+        if end is None: end = 0xFFFFFF
+        if not isinstance(start, int): raise TypeError("`start` must be of type `int`")
+        if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
+        if start < 0: start = self.operations[-1].end+start 
+        if end < 0: end = self.operations[-1].end+end
+        if start > end : return [ins for ins in self.operations if ins.end > start]+[ins for ins in self.operations if ins.end < end]
+        else: return [ins for ins in self.operations if ins.end > start and ins.offset < end]     
+
+    def __iter__(self) -> iter: return iter(self.operations)
+
+    def __getitem__(self, index):
+        return self.operations[index]
+
+    def __setitem__(self, index, value):
+        self.operations[index] = value
 
         
 
@@ -184,3 +231,7 @@ def apply(patch : bps, source : bytes, checks : bool = True, metadata : True = F
     if crc32(source) != patch.source_checksum and checks: 
         raise ChecksumMismatch(f"Expected source with checksum {patch.source_checksum} but calculated checksum of {crc32(source)}")
     return ((target, patch.metadata) if hasattr(patch, "metadata") else (target,)) if metadata else target
+
+
+
+def build(source : bytes, target : bytes, metadata : bytes = bytes()): pass
