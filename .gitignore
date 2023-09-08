@@ -6,3 +6,8 @@ get_patchlib.egg-info
 src/get_patchlib.egg-info
 build
 setup.py
+*.sfc
+*.bps
+*.pyc
+*.bsz 
+*.srm 
