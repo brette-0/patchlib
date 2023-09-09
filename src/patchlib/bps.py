@@ -102,24 +102,22 @@ class bps:
         contents = bytes() 
         for action in self: 
             
-            def encode(number : int):
+            def encode(number : int, signed : bool = False) -> bytes:
+                if signed: number = abs(number * 2) + (number < 0)
                 encoded = bytes()
-                while True: 
-                    x = number & 0x7f 
-                    number >>= 7 
-                    if number: encoded += x.to_bytes(1, "big"); number-= 1 
+                while True:
+                    x = number & 0x7f
+                    number >>= 7
+                    if number:
+                        encoded += x.to_bytes(1, "big")
+                        number -= 1
                     else: return encoded + (0x80 | x).to_bytes(1, "big")
-            contents += encode(((action.length+1) << 2) + action.operation)
-            def add_source_read(action): pass 
-            def add_target_read(action):
-                nonlocal contents 
-                contents += action.payload 
-            def add_copy_action(action): 
-                nonlocal contents 
-                contents += encode((abs(action.relative) << 1) + (action.relative < 0))
-            (add_source_read, add_target_read, add_copy_action, add_copy_action)[action.operation](action)
-        contents = b"BPS1"+ encode(self.source_size) + encode(self.target_size) + (encode(self.metadata_size if metadata else 0)) + (self.metadata if metadata and self.metadata_size != 0 else bytes()) + contents + int(self.source_checksum, 16).to_bytes(4, "little") + int(self.target_checksum, 16).to_bytes(4, "little")
-        print(time.time()-start())
+                    
+            contents += encode(((action.length - 1) << 2) + action.operation)
+            if action.operation & 2: contents += encode(action.relative, signed = True)
+            elif action.operation & 1: contents += action.payload
+        contents = b"BPS1"+ encode(self.source_size) + encode(self.target_size) + (encode(self.metadata_size if metadata else 0)) + (self.metadata if metadata and self.metadata_size else bytes()) + contents + int(self.source_checksum, 16).to_bytes(4, "little") + int(self.target_checksum, 16).to_bytes(4, "little")
+        print(time.time()-start)
         return contents + crc(contents).to_bytes(4, "little")
     #create(action : int, offset, payload, relative, name)
     #delete(action : action)
