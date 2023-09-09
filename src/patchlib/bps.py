@@ -8,7 +8,7 @@ class ContinuityError(Exception): pass
 #FOR DEV
 import time
 
-__version__ = "0.5"
+__version__ = "0.6"
 from zlib import crc32 as crc 
 
 """
@@ -16,7 +16,17 @@ def build   | build a BPS with : source, target | optional : metadata
 def apply   | apply a BPS with : source         | optional : metadata, validate
 """
 
-
+def encode(number : int, signed : bool = False) -> bytes:
+                if signed: number = abs(number * 2) + (number < 0)
+                encoded = bytes()
+                while True:
+                    x = number & 0x7f
+                    number >>= 7
+                    if number:
+                        encoded += x.to_bytes(1, "big")
+                        number -= 1
+                    else: return encoded + (0x80 | x).to_bytes(1, "big")
+                    
 class bps:
     def __iter__(self): return iter(self.actions)
     def __getitem__(self, index): return self.actions[index]
@@ -101,18 +111,6 @@ class bps:
         start = time.time()
         contents = bytes() 
         for action in self: 
-            
-            def encode(number : int, signed : bool = False) -> bytes:
-                if signed: number = abs(number * 2) + (number < 0)
-                encoded = bytes()
-                while True:
-                    x = number & 0x7f
-                    number >>= 7
-                    if number:
-                        encoded += x.to_bytes(1, "big")
-                        number -= 1
-                    else: return encoded + (0x80 | x).to_bytes(1, "big")
-                    
             contents += encode(((action.length - 1) << 2) + action.operation)
             if action.operation & 2: contents += encode(action.relative, signed = True)
             elif action.operation & 1: contents += action.payload
@@ -123,50 +121,37 @@ class bps:
     #delete(action : action)
     
     
-def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False): 
-    begin = time.time()
-    target = bytes() 
-    source_relative_offset = target_relative_offset = 0
-    for action in patch: 
-        def apply_source_read(action):
-            nonlocal target
+def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
+    target, source_relative_offset, target_relative_offset = bytes(), 0, 0
+    if checks and crc(source) != int(patch.source_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
+    for action in patch:
+        if action.operation == 0:
             target += source[action.offset : action.end]
-            
-        def apply_target_read(action):
-            nonlocal target 
+        if action.operation == 1:
             target += action.payload 
-            
-        def apply_source_copy(action):
-            nonlocal target, source_relative_offset
-            
-            if source_relative_offset > patch.source_size: raise ContinuityError()
-            if source_relative_offset < 0: raise ContinuityError()
-            
+        if action.operation == 2:
             source_relative_offset += action.relative 
-            target += source[source_relative_offset: source_relative_offset + action.length] 
-            source_relative_offset += action.length 
-            
-        def apply_target_copy(action):
-            nonlocal target, target_relative_offset
-            target_relative_offset += action.relative
-            
-            if target_relative_offset < 0: raise ContinuityError()
-            if target_relative_offset > len(target): raise ContinuityError()
-        
-             
+            target += source[source_relative_offset : source_relative_offset + action.length] 
+            source_relative_offset += action.length
+        if action.operation == 3:
+            target_relative_offset += action.relative 
             if target_relative_offset + action.length < len(target):
                 target += target[target_relative_offset: target_relative_offset + action.length]
             else:
                 loop = target[target_relative_offset:]
                 target += b"".join([loop for x in range(action.length // len(loop))]) + loop[:action.length % len(loop)]
-                print(hex(action.offset))
-            target_relative_offset += action.length 
-                
-        #The actions pull from the wrong areas of memory. The rest is totally operational afaik 
-        
-        (apply_source_read, apply_target_read, apply_source_copy, apply_target_copy)[action.operation](action)
-    if patch.target_size != len(target): raise ContinuityError()
-    if checks and crc(target) != patch.target_checksum: raise ChecksumMismatch()
-    print(time.time()-begin)
-    return (target, patch.metadata) if metadata else target
-#build
+            target_relative_offset += action.length
+    if checks and crc(target) != int(patch.target_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
+    return (target, patch.metadata) if patch.metadata_size and metadata else (target)
+
+
+def build(source : bytes, target : bps, checks : bool = True, metadata : bytes | bool = False) -> bytes:
+    patch = b"BPS1" + encode(len(source)) + encode(len(target))
+    if metadata and isinstance(metadata, bytes): patch += encode(len(metadata)) + metadata 
+    
+    # likely a technical behemoth
+    
+    patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")
+    patch += crc(patch)
+    
+    return patch
