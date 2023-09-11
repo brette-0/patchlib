@@ -16,10 +16,17 @@ def build   | build a BPS with : source, target | optional : metadata
 def apply   | apply a BPS with : source         | optional : metadata, validate
 """
 
-def encode(number : int, signed : bool = False) -> bytes:
-                if signed: number = abs(number * 2) + (number < 0)
-                encoded = bytes()
-                while True:
+def encode(number : int) -> bytes:
+    """enocdes numerical information with variable width encoding
+
+    Args:
+        number (int): the number to encode
+
+    Returns:
+        bytes: the encoded number
+    """
+    encoded = bytes()
+    while True:
                     x = number & 0x7f
                     number >>= 7
                     if number:
@@ -105,23 +112,44 @@ class bps:
             offset += length
         if sum(tuple(action.length for action in self.actions)) != self.target_size:
             raise ContinuityError("BPS file is corrupt!")
-        print(time.time() - begin)
         
-    def to_bytes(self, metadata : bool = False, checks : bool = True):
-        start = time.time()
+    def to_bytes(self, metadata : bool = False, checks : bool = True)->bytes:
+        """process bps object into encoded file
+
+        Args:
+            metadata (bool, optional): metadata inclusion flag. Defaults to False.
+            checks (bool, optional): validate checksums. Defaults to True.
+
+        Returns:
+            bytes: encoded bps file
+        """
         contents = bytes() 
         for action in self: 
             contents += encode(((action.length - 1) << 2) + action.operation)
-            if action.operation & 2: contents += encode(action.relative, signed = True)
+            if action.operation & 2: contents += encode(abs(action.relative * 2) + (action.relative < 0))
             elif action.operation & 1: contents += action.payload
         contents = b"BPS1"+ encode(self.source_size) + encode(self.target_size) + (encode(self.metadata_size if metadata else 0)) + (self.metadata if metadata and self.metadata_size else bytes()) + contents + int(self.source_checksum, 16).to_bytes(4, "little") + int(self.target_checksum, 16).to_bytes(4, "little")
-        print(time.time()-start)
         return contents + crc(contents).to_bytes(4, "little")
     #create(action : int, offset, payload, relative, name)
     #delete(action : action)
     
     
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
+    """_summary_
+
+    Args:
+        source (bytes): source file required by the patch
+        patch (bps): patch object to be used on the source
+        checks (bool, optional): perform checksum validation. Defaults to True.
+        metadata (bool, optional): include metadata in output. Defaults to False.
+
+    Raises:
+        ChecksumMismatch: on source mismatch
+        ChecksumMismatch: on target mismatch
+
+    Returns:
+        tuple | bytes: patched file, or combination of patched file with metadata
+    """
     target, source_relative_offset, target_relative_offset = bytes(), 0, 0
     if checks and crc(source) != int(patch.source_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
     for action in patch:
@@ -145,12 +173,76 @@ def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = F
     return (target, patch.metadata) if patch.metadata_size and metadata else (target)
 
 
-def build(source : bytes, target : bps, checks : bool = True, metadata : bytes | bool = False) -> bytes:
+def build(source : bytes, target : bps, metadata : bytes | bool = False) -> bytes:
+    """build BPS patch from source and target file
+
+    Args:
+        source (bytes): file the user will have to create target
+        target (bps): file the user will not have that will be made by this script
+        metadata (bytes | bool, optional): metadata contents. Defaults to False.
+
+    Returns:
+        bytes: bps encoded file
+    """
     patch = b"BPS1" + encode(len(source)) + encode(len(target))
     if metadata and isinstance(metadata, bytes): patch += encode(len(metadata)) + metadata 
     
-    # likely a technical behemoth
-    
+    offset = 0 
+    while len(target) - offset:
+        if source[offset] == target[offset]: 
+            length = 0 
+            while target[offset : offset + length] in source:
+                length += 1 
+            else: 
+                length -= 1
+                
+            source_length = length
+
+            while target[offset : offset + length] in target[:offset]:
+                length += 1
+                
+            if length > source_length:                              #target_copy is better than a source_copy | but is a target_read even better?
+                relative = offset - target.index(target[offset : offset + length])
+                operation = encode(((length - 1) << 2) + 3) + encode(abs(relative << 1) + (relative < 0))
+                if length < len(operation):                         #target_read is preferable end of
+                    operation = encode(((length - 1) << 2) + 1) + target[offset : length]
+                    patch += operation 
+                    offset += length
+                    continue
+            else: 
+                loop = False
+                start = dist = 0
+                for start in range(length): 
+                    for dist in range(length - start): 
+                        if all(target[offset + start + byte] == target[offset + start + dist + byte] for byte in range(length - (start + dist))):
+                            loop = True
+                            break 
+                    else: continue 
+                    break
+                    
+                if loop: 
+                    while target[offset + start + length] == target[offset + start + dist + length]:
+                        length += 1 
+                    else: 
+                        length -= 1
+                        
+                    relative = offset - target.index(target[offset : offset + length])
+                    operation = encode(((length - 1) << 2) + 3) + encode(abs(relative << 1) + (relative < 0))
+                    patch += operation
+                    offset += length 
+                else: 
+                    
+                    relative = offset - source.index(target[offset : offset + length]) 
+                    if relative: 
+                        operation = encode(((length - 1) << 2) + 2) + encode(abs(relative << 1) + (relative < 0))
+                    else: 
+                        operation = encode((length - 1) << 2)
+                        
+                    patch += operation 
+                    offset += length 
+                        
+                
+        
     patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")
     patch += crc(patch)
     
