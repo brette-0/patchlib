@@ -10,7 +10,7 @@ import time
 
 __version__ = "0.6"
 from zlib import crc32 as crc 
-
+import re
 """
 def build   | build a BPS with : source, target | optional : metadata
 def apply   | apply a BPS with : source         | optional : metadata, validate
@@ -60,7 +60,6 @@ class bps:
             self.name, self.relative, self.source = name, relative, action & 1
             
     def __init__(self, patch : bytes, checks : bool = True, metadata : bool = True): 
-        begin = time.time()
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)]
         if checks and crc(patch[:-4]) != int(self.patch_checksum, 16): raise ChecksumMismatch("BPS file is corrupt!")
         patch = patch[4:-12]
@@ -135,7 +134,7 @@ class bps:
     
     
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
-    """_summary_
+    """apply a bps object to the required source file.
 
     Args:
         source (bytes): source file required by the patch
@@ -184,64 +183,55 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
     Returns:
         bytes: bps encoded file
     """
+    begin = time.time()
     patch = b"BPS1" + encode(len(source)) + encode(len(target))                                 # Header
     if metadata and isinstance(metadata, bytes): patch += encode(len(metadata)) + metadata      # optional metadata
+    else: patch += encode(0)                                                                    # else append terminated 0
     
-    offset = 0                                                                                  # intialize offset
+    offset = source_relative = target_relative = 0                                              # intialize offset
     while len(target) - offset:                                                                 # whilst patch is not totally read
-        length = 0                                                                              # re initialize length
-        while target[offset : offset + length] in source: length += 1                           # read for as long as the target can be found in source
-        else:
-            length -= 1                                                                         # adjust size after leaving
-            source_length = length                                                              # clone for later math
-
-            while target[offset : offset + length] in target[:offset]:                          # while content is possible to find in current target
-                length += 1                                                                     # increment width of conent
-            else: length -= 1                                                                   # adjust size after leaving
-                
-            if length > source_length:                                                          # if current target stores more than source
-                relative = offset - target.index(target[offset : offset + length])              # prepare target copy information
-                operation = encode(((length - 1) << 2) + 3) + encode(abs(relative << 1) + (relative < 0))
-                if length < len(operation):                                                     # if copy instruction is larger than the payload itself
-                    operation = encode(((length - 1) << 2) + 1) + target[offset : length]       # set up target_read
-                patch += operation                                                              # append contents regardless of type to operation
-                offset += length                                                                # modify offset to skip processed data
-                continue                                                                        # begin new cycle
-            else:
-                loop = False                                                                    # unset loop logic
-                for start in range(length):                                                     # for each possible starting point
-                    for dist in range(length - start):                                          # for each possible loop distance
-                        select = dist * (length - start // dist)                                # what size should be a perfect loop?
-                        # if loop is perfect for expected perfect area
-                        if all(target[offset + start + byte] == target[offset + start + dist + byte] for byte in range(select)):
-                            # perform an additional check to evaluate if the data continues afterwards like this
-                            if target[offset + start: offset + start + dist].startswith(target[offset + start + select:]):
-                                # if it does, increase the length for as long as there is data to loop
-                                while target[offset + start + length] == target[offset + start + length + dist]:
-                                    length += 1
-                                loop = True
-                                break 
-                    else: continue 
+        length  = adder = 0
+        print(f"{offset}/{len(target)}")
+        if target[offset + length] in source:
+            while True:
+                if target[offset : offset + length + adder] in target[:offset] and offset + length + adder <= len(target):
+                    adder += 1
+                    length += adder
+                else:
+                    while not (target[offset : offset + length + adder] in target[:offset]):
+                        length -= 1
+                    length += adder
                     break
-                if loop:                                                                        # if looping worked
-                    relative = offset - target.index(target[offset : offset + length])          # get relative offset
-                    # add relative offset to patch
-                    patch += encode(((length - 1) << 2) + 3) + encode(abs(relative << 1) + (relative < 0))
-                    offset += length
-                else:                                                                           # otherwise default to source
-                    relative = offset - source.index(target[offset : offset + length])          # locate source relative offset
-                    if relative:                                                                # if non-zero, its source_copy
-                        # create the source copy action
-                        patch += encode(((length - 1) << 2) + 2) + encode(abs(relative << 1) + (relative < 0))
-                    else: patch += encode((length - 1) << 2)                                    # if at current offset, its source_read
-                    offset += length                                                            # update offset by length of operation
-                    
-        while not target[offset + length] in source: length += 1                                # while said byte is not in source 
-        else:
-            patch += encode(((abs(offset - length)-1) << 2) + 1) + target[offset : length]      # store bytes from continous difference
-            offset += length                                                                    # modify offset to skip included data
-                
         
+            #while (target[offset : offset + length] in target[:offset] and offset + length <= len(target)): length += 1
+            #]length -= 1
+            target_length = length 
+            
+            # find loopable array in array, loop array and modify length
+            
+            while target[offset : offset + length] in source and offset + length <= len(target): length += 1 
+            length -= 1
+            source_length = length
+            
+            
+            
+            if source_length > target_length:
+                length = source_length
+                if (source[offset : offset + length] == target[offset : offset + length]) if offset + length < len(source) else False: 
+                    patch += encode((length - 1) << 2)
+                    offset += length
+                else:
+                    relative = source.index(target[offset : offset + length]) - source_relative
+                    patch += encode(((length - 1 ) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
+                    offset += length
+                    source_relative += length + relative
+            else: 
+                length = target_length
+                relative = target.index(target[offset : offset + length]) - target_relative 
+                patch += encode(((length - 1) << 2) | 3) + encode(abs(relative << 1) | (relative < 0))
+                offset += length 
+                target_relative += length + relative
+    print(time.time()-begin)
     patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")              # add footer checksums
-    return patch + crc(patch)                                                                   # return patch with patch checksum
+    return patch + crc(patch).to_bytes(4, "little")                                             # return patch with patch checksum
                                                     

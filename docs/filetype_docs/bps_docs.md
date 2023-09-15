@@ -111,15 +111,15 @@ However as `patchlib.bps` is a module, usage is determined by the user and there
 
 `bps` constructing is much more detailed than `bps` applying,  as we have to account for the following things:
 
-- Rule 1
-- Rule 2
-- Rule 3
+- `target_copy` overlapping checks must always be checked first
+- `source_read` takes priority over `source_copy` only if optimal.
+-  Electing the closest relatives allows for smaller pointers.
 
-`*` *Explanation 1*
+`*` *byuu's method to obsoleting RLE in patching was self-referential `target_copy` actions. Allowing the newly generated data to be accessed immediately for the output.*
 
-`**` *Explanation 2*
+`**` *while it may initially seem obvious, if more data can be accessed elsewhere for this offset then `source_read` is unpreferable, however if this is not the case then `source_read` should then be chosen due to it being pointer-less*
 
-`***` *Explanation 3*
+`***` *If the theory is correctly implemented, the patch will mostly be relative copy functions. Through understanding that segments of data will be repeated throughout the patch - choosing an optimal path reduces file size greatly.*
 
 Now that you know the rules, we can begin to create a `bps` file.
 ```python
@@ -139,13 +139,10 @@ def makepatch(basefile,targetfile,outfile):
 ### Why do we sometimes use other patching filetypes?
 `ips` was the original patch filetype, however it complied to outdated hardware limitations that makes it often unsuitable for larger tasks. `bps` is not the immediate successor to `ips`, but it is the successor to `ups` also made by byuu. 
 
-[Much research will need to be done into `ups`]
-
-
-Talk about Xdelta.
+Currently, I do not have the theory on UPS or Xdelta, so no information in relation to these can be answered from me.
 
 ### Should I use Xdelta over `bps`?
-Attempt to answer question
+While my knowledge on Xdelta is essentially none, `bps` has some advantages over Xdelta - being that `bps` under no circumstances will demand a `64 bit` environment due to Xdelta3's `64 bit` exclusive method for encoding. `bps` has theoretical functionality for systems with a higher bitsize than `64` despite working on lower systems.
 
 ### Should I make my own `bps` handling tool?
 As of this being written up there are not too may `bps` handlers compared to the likes of `ips`. If there is some way, be it operating system or technical feature, that `bps` has been left unfulfilled it may be logical to create these tools.
