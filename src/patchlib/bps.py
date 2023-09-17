@@ -198,20 +198,42 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
                     adder += 1
                     length += adder
                 else:
-                    while not (target[offset : offset + length + adder] in target[:offset]):
+                    while not (target[offset : offset + length + adder] in target[:offset]) or offset + length + adder > len(target):
                         length -= 1
                     length += adder
                     break
-        
-            #while (target[offset : offset + length] in target[:offset] and offset + length <= len(target)): length += 1
-            #]length -= 1
+            
             target_length = length 
+            length = 2
+            adder = 1
+            # I chose 4 cause 4 bytes | 64 bit .Yeah I know, "arbitrary constants" Well this is a logistical mess and a good answer is hard to find
+            while target[offset : offset + (length * 4)] == target[offset : offset + 4]*length: 
+                length += adder 
+                adder += 1
+        
+            while not (target[offset : offset + (length * 4)] == target[offset : offset + 4] * length) or offset + length + adder > len(target):
+                length -= 1
+            length += adder
+            
+            
+            
+            target_length = max(length * 4, target_length)
             
             # find loopable array in array, loop array and modify length
-            
-            while target[offset : offset + length] in source and offset + length <= len(target): length += 1 
-            length -= 1
-            source_length = length
+            adder = 0
+            if target[offset : offset + length] in source:
+                while True:
+                    if target[offset : offset + length + adder] in source and offset + length + adder <= len(source):
+                        adder += 1
+                        length += adder
+                    else:
+                        while not (target[offset : offset + length + adder] in source) or offset + length + adder > len(source):
+                            length -= 1
+                        length += adder
+                        break
+            else: length -= 1       #decrement to prioritize target
+        
+            source_length = length 
             
             
             
@@ -222,13 +244,19 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
                     offset += length
                 else:
                     relative = source.index(target[offset : offset + length]) - source_relative
-                    patch += encode(((length - 1 ) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
+                    action = encode(((length - 1 ) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
+                    if len(action) > length: 
+                        action = encode(((length - 1) << 2) | 1) + source[offset : offset + length]
+                    patch += action
                     offset += length
                     source_relative += length + relative
             else: 
                 length = target_length
                 relative = target.index(target[offset : offset + length]) - target_relative 
-                patch += encode(((length - 1) << 2) | 3) + encode(abs(relative << 1) | (relative < 0))
+                action = encode(((length - 1) << 2) | 3) + encode(abs(relative << 1) | (relative < 0))
+                if len(action) > length: 
+                    action = encode(((length - 1) << 2) | 1) + target[offset : offset + length]
+                patch += action
                 offset += length 
                 target_relative += length + relative
     print(time.time()-begin)
