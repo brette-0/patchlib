@@ -18,11 +18,11 @@ Or can be installed with:
 |BPS|[`patchlib.bps`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/bps.py)|[patchlib.bps](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/package_docs/patchlib.bps_docs.md)|0.6|11.2 KB|[BPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/filetype_docs/bps_docs.md)
 |Xdelta|[`patchlib.xdelta`]()|Not yet|None|None|None
 |PPF|[`patchlib.ppf`]()|Not yet|None|None|None
-|UPS|[`patchlib.ups`]()|Not yet|None|None|None
+|EPS|[`patchlib.eps`](https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/eps.py)|Not yet|0.0|None|[EPS](https://github.com/BrettefromNesUniverse/patchlib/blob/main/docs/filetype_docs/eps_docs.md)
 |APS|[`patchlib.aps`]()|Not yet|None|None|None
 |RUP|[`patchlib.rup`]()|Not yet|None|None|None
 |NPS|[`patchlib.nps`]()|Not yet|None|None|None
-|Luna|[`patchlib.eps`]()|Not yet|None|None|None
+|Luna|[`patchlib.ups`]()|Not yet|None|None|None
 
 Using `import patchlib` will install all packages with the `importlib` module. `patchlib` provides no context abundant methods and relies on the package being specified.
 
