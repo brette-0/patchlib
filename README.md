@@ -19,7 +19,6 @@ Or can be installed with:
 |Xdelta|[`patchlib.xdelta`]()|Not yet|None|None|None
 |PPF|[`patchlib.ppf`]()|Not yet|None|None|None
 |UPS|[`patchlib.ups`]()|Not yet|None|None|None
-
 |APS|[`patchlib.aps`]()|Not yet|None|None|None
 |RUP|[`patchlib.rup`]()|Not yet|None|None|None
 |NPS|[`patchlib.nps`]()|Not yet|None|None|None
