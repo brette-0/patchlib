@@ -22,8 +22,6 @@ Or can be installed with:
 |APS|[`patchlib.aps`]()|Not yet|None|None|None
 |RUP|[`patchlib.rup`]()|Not yet|None|None|None
 |NPS|[`patchlib.nps`]()|Not yet|None|None|None
-|Luna|[`patchlib.luna`]()|Not yet|None|None|None
+|Luna|[`patchlib.eps`]()|Not yet|None|None|None
 
 Using `import patchlib` will install all packages with the `importlib` module. `patchlib` provides no context abundant methods and relies on the package being specified.
-
-`Luna` serialized class handling may be implemented at a later point in time once enough of the crucial patch filetypes have been completed.
