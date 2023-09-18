@@ -130,8 +130,29 @@ class bps:
         contents = b"BPS1"+ encode(self.source_size) + encode(self.target_size) + (encode(self.metadata_size if metadata else 0)) + (self.metadata if metadata and self.metadata_size else bytes()) + contents + int(self.source_checksum, 16).to_bytes(4, "little") + int(self.target_checksum, 16).to_bytes(4, "little")
         return contents + crc(contents).to_bytes(4, "little")
     #create(action : int, offset, payload, relative, name)
-    #delete(action : action)
-    
+    def delete(self, action : source_read | target_read | relative_action)-> dict: 
+        """delete an action from bps object.
+
+        Args:
+            action (action | source_read | target_read | relative_action): Action to be removed from bps object
+
+        Returns:
+            dict: Struct of deleted action attributes
+        """
+        store = {"parent" : action.parent, "length" : action.length, "offset" : action.offset, "name" : action.name}
+        if isinstance(action, self.source_read): raise ContinuityError("Cannot delete empty space!") 
+        if isinstance(action, self.target_read): 
+            if isinstance(self.actions[self.actions.index(action)-1], self.source_read):
+                store["payload"] = action.payload
+                self.actions[self.actions.index(action)-1].length += action.length 
+                self.actions.remove(action) 
+            else: 
+                temp = self.source_read(self, action.length, action.offset, f"Unnamed source read at {hex(action.offset)[2:].upper()} with length {hex(action.length)[2:].upper()}")
+                self.actions.insert(self.actions.index(action), temp)
+                self.actions.remove(action)
+        if isinstance(action, self.relative_action): 
+            raise Exception("Not supported Yet!")
+        return store
     
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
     """apply a bps object to the required source file.
@@ -188,77 +209,72 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
     if metadata and isinstance(metadata, bytes): patch += encode(len(metadata)) + metadata      # optional metadata
     else: patch += encode(0)                                                                    # else append terminated 0
     
-    offset = source_relative = target_relative = 0                                              # intialize offset
-    while len(target) - offset:                                                                 # whilst patch is not totally read
-        length  = adder = 0
-        print(f"{offset}/{len(target)}")
-        if target[offset + length] in source:
-            while True:
-                if target[offset : offset + length + adder] in target[:offset] and offset + length + adder <= len(target):
-                    adder += 1
-                    length += adder
-                else:
-                    while not (target[offset : offset + length + adder] in target[:offset]) or offset + length + adder > len(target):
-                        length -= 1
-                    length += adder
-                    break
-            
-            target_length = length 
-            length = 2
-            adder = 1
-            # I chose 4 cause 4 bytes | 64 bit .Yeah I know, "arbitrary constants" Well this is a logistical mess and a good answer is hard to find
-            while target[offset : offset + (length * 4)] == target[offset : offset + 4]*length: 
-                length += adder 
-                adder += 1
+    offset = length = source_relative = target_relative = 0
+    while len(target) - offset: 
+        print(f"{offset} / {len(target)} | {len(patch)} / 352865")
+        length = 0
+        while not target[offset + length] in source: length += 1
+        if length: 
+            patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
+            continue 
+        start =0
+        while target[offset + start : offset + start + length] == target[offset : offset + 4] * (length >> 2) and offset + start + length < len(target): 
+            start += 4 
+            length += start
+        while not (target[offset + start : offset + start + length] == target[offset : offset + 4] * (length >> 2) and offset + start + length < len(target)):
+            length -= 4 
         
-            while not (target[offset : offset + (length * 4)] == target[offset : offset + 4] * length) or offset + length + adder > len(target):
-                length -= 1
+        target_length = length 
+        adder = 0
+        while target[offset : offset + length + adder] in target[:offset] and offset + length + adder < len(target): 
             length += adder
+            adder *= 2
+        while not (target[offset : offset + length + adder] in target[:offset] and offset + length + adder < len(target)):
+            length -= 1
             
+        target_length = max(length, target_length)
+        length = 0
+        while target[offset : offset + length + adder] in source and offset + length + adder < len(source): 
+            length += adder
+            adder *= 2 
+        while not (target[offset : offset + length + adder] in source and offset + length + adder < len(source)):
+            length -= 1
+        source_length = length
             
-            
-            target_length = max(length * 4, target_length)
-            
-            # find loopable array in array, loop array and modify length
-            adder = 0
-            if target[offset : offset + length] in source:
-                while True:
-                    if target[offset : offset + length + adder] in source and offset + length + adder <= len(source):
-                        adder += 1
-                        length += adder
-                    else:
-                        while not (target[offset : offset + length + adder] in source) or offset + length + adder > len(source):
-                            length -= 1
-                        length += adder
-                        break
-            else: length -= 1       #decrement to prioritize target
-        
-            source_length = length 
-            
-            
-            
-            if source_length > target_length:
-                length = source_length
-                if (source[offset : offset + length] == target[offset : offset + length]) if offset + length < len(source) else False: 
-                    patch += encode((length - 1) << 2)
-                    offset += length
-                else:
-                    relative = source.index(target[offset : offset + length]) - source_relative
-                    action = encode(((length - 1 ) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
-                    if len(action) > length: 
-                        action = encode(((length - 1) << 2) | 1) + source[offset : offset + length]
-                    patch += action
-                    offset += length
-                    source_relative += length + relative
+        if source_length > target_length: 
+            if source[offset : offset + length] == target[offset : offset + length]: 
+                patch += encode((length - 1) << 2) 
             else: 
-                length = target_length
-                relative = target.index(target[offset : offset + length]) - target_relative 
-                action = encode(((length - 1) << 2) | 3) + encode(abs(relative << 1) | (relative < 0))
+                length = adder = 0 
+                while target[offset : offset + target_length] in source[source_relative - (length + adder) : source_relative + length + adder]:
+                    adder += 1 
+                    length += adder 
+                while not(target[offset : offset + target_length] in source[source_relative - (length + adder) : source_relative + length + adder]): 
+                    length -=1 
+                relative = (source[source_relative - (length + adder) : source_relative + length + adder].index(target[offset : offset + target_length])) - source_relative
+                action = encode(((length - 1) << 2) | 2) + encode(abs(relative) << 1 + (relative < 0))
                 if len(action) > length: 
-                    action = encode(((length - 1) << 2) | 1) + target[offset : offset + length]
-                patch += action
-                offset += length 
-                target_relative += length + relative
+                    patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
+                else: patch += action
+                offset += target_length
+        else: 
+                length = adder = 0 
+                while target[offset : offset + target_length] in target[:offset][target_relative - (length + adder) : target_relative + length + adder]:
+                    adder += 1 
+                    length += adder 
+                while not(target[offset : offset + target_length] in target[:offset][target_relative - (length + adder) : target_relative + length + adder]): 
+                    length -=1 
+                relative = (target[:offset][target_relative - (length + adder) : target_relative + length + adder].index(target[offset : offset + target_length])) - target_relative
+                action = encode(((length - 1) << 2) | 3) + encode(abs(relative) << 1 + (relative < 0))
+                if len(action) > length: 
+                    patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
+                else: patch += action # find the best offset, then compare that against target read
+                offset += source_length
+        """
+        relative offsets MUST BE REDUCED. Prefer closer offsets ALWAYS (CRUCIAL)
+        """
+    
+    
     print(time.time()-begin)
     patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")              # add footer checksums
     return patch + crc(patch).to_bytes(4, "little")                                             # return patch with patch checksum

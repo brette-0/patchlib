@@ -17,16 +17,16 @@ def encode(number : int) -> bytes:
     """
     encoded = bytes()
     while True:
-                    x = number & 0x7f
-                    number >>= 7
-                    if number:
-                        encoded += x.to_bytes(1, "big")
-                        number -= 1
-                    else: return encoded + (0x80 | x).to_bytes(1, "big")
+        x = number & 0x7f
+        number >>= 7
+        if number:
+            encoded += x.to_bytes(1, "big")
+            number -= 1
+        else: return encoded + (0x80 | x).to_bytes(1, "big")
 
 class eps:
-    def instance(self, length : int, relative : int, copy : bool, name : str = None):
-        self.length, self.relative, self.copy, self.name = length, relative, copy, name
+    def instance(self, length : int, relative : int, name : str = None):
+        self.length, self.relative, self.name = length, relative, name
         
     def __init__(self, source : bytes):
         if not source.startswith(b"EPS"): 
@@ -57,20 +57,31 @@ class eps:
         self.instances = []
         offset = 0
         while len(patch):
+            offset = decode()
             length = decode() 
-            if length: 
-                relative = decode()
-                if relative & 1: 
-                    relative = (relative >> 2) * (-1 if relative & 2 else 1) 
-                    self.instances.append(self.instance(length, relative, True, f"Unnamed target copy at {offset} with length {length}"))
-                else: 
-                    relative >>= 1
-                    self.instances.append(self.instance(length, relative, False, f"Unnamed data accesss at {offset} with length {length}"))
-            else: 
-                self.instances.append(self.instance(decode(), None, None, f"Unnamed source read at {offset} with length {length}"))
-            offset += length
+            relative = decode()
+            self.instances.append(self.instance(length, relative, False, f"Unnamed instance at {offset} with length {length}"))
             
+def apply(source, patch : eps)-> bytes: 
+    """applies an eps object to a source file
+    
+    Args:
+        source (bytes): source file contents, the file the user has
+        patch (eps): the eps object the user has normalized
+        
+    Returns:
+        bytes: eps object patched file
+    """
+    offset = 0
+    target = bytes()
+    for instance in patch: 
+        offset += instance.offset
+        target += source[len(target):offset] + eps.data_bank[instance.relative : instance.relative + instance.length]
+        offset += instance.length 
+        
+    return target
             
+
 def build(source : bytes, target : bytes, version : int = 0) -> bytes:
     """builds an eps file from source and target contents
 
@@ -86,14 +97,35 @@ def build(source : bytes, target : bytes, version : int = 0) -> bytes:
         nonlocal source, target, version 
         data_bank = bytes()                     # init data bank 
         contents = bytes()                      # output contents
-        
+        offset = length = 0
+        while source[offset + length] != target[offset + length]: length += 1 # not a flawless way to detect difference
+        length -= 1
+        if target[offset : length] not in data_bank: 
+            end = True 
+            while end:
+                end = 0
+                while target[offset : end] in data_bank and end >= (encode(offset) + encode(length) + encode(data_bank.index(target[offset : offset + end]))) and end < length:
+                    end += 1
+                if end:
+                    contents += encode(offset) + encode(end) + encode(data_bank.index(target[offset : offset + end]))
+                    offset += end
+                else: 
+                    start = 0
+                    while start < length - end and target[offset + end + start : offset + length] in data_bank: 
+                        start += 1
+                    start -= 1
+                    # index data bank for contents, and insert 
+                    bank_pos = data_bank.index(target[offset + end + start : offset + length])
+                    if data_bank[bank_pos - start: length - end].startswith(target[offset + end: offset + length]): 
+                        pass # the data is leading
+                    
+        else:
+            contents += encode(offset) + encode(length) + encode(data_bank.index(target[offset : offset + length]))
+        offset += length
         """ 
         
         generate a slice
-        identify overlap
-        add loop contents to data_bank if not already present.
-        set up target copy from there.
-        
+        split up for pre-existing contents
         #store pointers yaya
         
         """
