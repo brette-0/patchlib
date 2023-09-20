@@ -151,8 +151,24 @@ class bps:
                 self.actions.insert(self.actions.index(action), temp)
                 self.actions.remove(action)
         if isinstance(action, self.relative_action): 
-            raise Exception("Not supported Yet!")
+            store["relative"] = action.relative
+            temp = [act for act in self.actions if act.operation == action.operation]
+            if temp[-1] != action: 
+                self.actions[self.index(temp.index(action) + 1)] -= action.relative
         return store
+    
+    def range(self,start : int = 0, end : int = None) -> bytes: 
+        """
+        Retrieves all existing actions within a specified range of offsets
+        """
+
+        if end is None: end = 0xFFFFFF
+        if not isinstance(start, int): raise TypeError("`start` must be of type `int`")
+        if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
+        if start < 0: start = self.actions[-1].end+start 
+        if end < 0: end = self.actions[-1].end+end
+        if start > end : return [ins for ins in self.actions if ins.end > start]+[ins for ins in self.actions if ins.end < end]
+        else: return [ins for ins in self.actions if ins.end > start and ins.offset < end] 
     
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
     """apply a bps object to the required source file.
@@ -210,70 +226,15 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
     else: patch += encode(0)                                                                    # else append terminated 0
     
     offset = length = source_relative = target_relative = 0
-    while len(target) - offset: 
-        print(f"{offset} / {len(target)} | {len(patch)} / 352865")
-        length = 0
-        while not target[offset + length] in source: length += 1
-        if length: 
-            patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
-            continue 
-        start =0
-        while target[offset + start : offset + start + length] == target[offset : offset + 4] * (length >> 2) and offset + start + length < len(target): 
-            start += 4 
-            length += start
-        while not (target[offset + start : offset + start + length] == target[offset : offset + 4] * (length >> 2) and offset + start + length < len(target)):
-            length -= 4 
-        
-        target_length = length 
-        adder = 0
-        while target[offset : offset + length + adder] in target[:offset] and offset + length + adder < len(target): 
-            length += adder
-            adder *= 2
-        while not (target[offset : offset + length + adder] in target[:offset] and offset + length + adder < len(target)):
-            length -= 1
-            
-        target_length = max(length, target_length)
-        length = 0
-        while target[offset : offset + length + adder] in source and offset + length + adder < len(source): 
-            length += adder
-            adder *= 2 
-        while not (target[offset : offset + length + adder] in source and offset + length + adder < len(source)):
-            length -= 1
-        source_length = length
-            
-        if source_length > target_length: 
-            if source[offset : offset + length] == target[offset : offset + length]: 
-                patch += encode((length - 1) << 2) 
-            else: 
-                length = adder = 0 
-                while target[offset : offset + target_length] in source[source_relative - (length + adder) : source_relative + length + adder]:
-                    adder += 1 
-                    length += adder 
-                while not(target[offset : offset + target_length] in source[source_relative - (length + adder) : source_relative + length + adder]): 
-                    length -=1 
-                relative = (source[source_relative - (length + adder) : source_relative + length + adder].index(target[offset : offset + target_length])) - source_relative
-                action = encode(((length - 1) << 2) | 2) + encode(abs(relative) << 1 + (relative < 0))
-                if len(action) > length: 
-                    patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
-                else: patch += action
-                offset += target_length
-        else: 
-                length = adder = 0 
-                while target[offset : offset + target_length] in target[:offset][target_relative - (length + adder) : target_relative + length + adder]:
-                    adder += 1 
-                    length += adder 
-                while not(target[offset : offset + target_length] in target[:offset][target_relative - (length + adder) : target_relative + length + adder]): 
-                    length -=1 
-                relative = (target[:offset][target_relative - (length + adder) : target_relative + length + adder].index(target[offset : offset + target_length])) - target_relative
-                action = encode(((length - 1) << 2) | 3) + encode(abs(relative) << 1 + (relative < 0))
-                if len(action) > length: 
-                    patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length]
-                else: patch += action # find the best offset, then compare that against target read
-                offset += source_length
-        """
-        relative offsets MUST BE REDUCED. Prefer closer offsets ALWAYS (CRUCIAL)
-        """
+    adder = 1
     
+    slice_time = 0
+    while len(target) - offset: 
+        print(f"{offset} / {len(target)} | {len(patch)} / 352865 | {100-int(100*len(patch)/max(1, offset))}% | {len(str(round(length / (time.time()-slice_time if time.time()-slice_time else 1), 0)))}")
+        slice_time = time.time()
+        
+        # the logistical mess is entirely within the real of not file efficiency but TIMING.
+        # the code takes HOURS TO COMPLETE. so we rewrite it again.
     
     print(time.time()-begin)
     patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")              # add footer checksums

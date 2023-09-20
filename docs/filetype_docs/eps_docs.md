@@ -64,27 +64,19 @@ def apply(source : bytes, patch : bytes)->bytes:
 	
 	target = bytes()
 	offset = 0
+	target = bytes()
 	while patch: 
 		length = decode() 
-		if length: 
-			# this is patch information
-			pointer = decode() 
-			if pointer & 1:
-				# this is copy function
-				"""
-				perform a target_copy style move (only should be generated post source)
-				from offset added this signed value (next bit) 
-				"""
-				relative = (pointer >> 2) * (-1 if pointer & 2 else 1)
-				# perform target_copy loop from (offset + relative) to (offset + relative + length)
-			else: 
-				# this is a read function
-			target += bank[pointer : pointer + length]
-		else: 
-			# this is a sign of no-data 
-			length = decode()
+		if length & 1:
+			length >>= 1
 			target += source[offset : offset + length]
+			offset += length 
+		else:
+			length >> = 1
+			relative = decode() 
+			target += data_bank[relative : relative + length]
 			offset += length
+	return target
 		
 ```
 
