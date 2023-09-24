@@ -44,6 +44,9 @@ class bps:
             self.parent, self.operation, self.length, self.offset = parent, operation, length, offset
             self.end = offset + length
             
+        def modify(self, operation : int = None, offset : int = None, length : int = None, payload : bytes = None, relative : int = None, name : str = None): 
+            raise NotImplementedError("action modification is currently unimplemented")
+            
     class source_read(action):
         def __init__(self, parent, length : int, offset : int, name : str):
             super().__init__(parent, 0, length, offset)
@@ -129,35 +132,8 @@ class bps:
             elif action.operation & 1: contents += action.payload
         contents = b"BPS1"+ encode(self.source_size) + encode(self.target_size) + (encode(self.metadata_size if metadata else 0)) + (self.metadata if metadata and self.metadata_size else bytes()) + contents + int(self.source_checksum, 16).to_bytes(4, "little") + int(self.target_checksum, 16).to_bytes(4, "little")
         return contents + crc(contents).to_bytes(4, "little")
-    #create(action : int, offset, payload, relative, name)
-    def delete(self, action : source_read | target_read | relative_action)-> dict: 
-        """delete an action from bps object.
-
-        Args:
-            action (action | source_read | target_read | relative_action): Action to be removed from bps object
-
-        Returns:
-            dict: Struct of deleted action attributes
-        """
-        store = {"parent" : action.parent, "length" : action.length, "offset" : action.offset, "name" : action.name}
-        if isinstance(action, self.source_read): raise ContinuityError("Cannot delete empty space!") 
-        if isinstance(action, self.target_read): 
-            if isinstance(self.actions[self.actions.index(action)-1], self.source_read):
-                store["payload"] = action.payload
-                self.actions[self.actions.index(action)-1].length += action.length 
-                self.actions.remove(action) 
-            else: 
-                temp = self.source_read(self, action.length, action.offset, f"Unnamed source read at {hex(action.offset)[2:].upper()} with length {hex(action.length)[2:].upper()}")
-                self.actions.insert(self.actions.index(action), temp)
-                self.actions.remove(action)
-        if isinstance(action, self.relative_action): 
-            store["relative"] = action.relative
-            temp = [act for act in self.actions if act.operation == action.operation]
-            if temp[-1] != action: 
-                self.actions[self.index(temp.index(action) + 1)] -= action.relative
-        return store
     
-    def range(self,start : int = 0, end : int = None) -> bytes: 
+    def range(self,start : int = 0, end : int = None, exclude_source_read : bool = False) -> bytes: 
         """
         Retrieves all existing actions within a specified range of offsets
         """
@@ -167,7 +143,7 @@ class bps:
         if not isinstance(end, int): raise TypeError("`end` must be of type `int`")
         if start < 0: start = self.actions[-1].end+start 
         if end < 0: end = self.actions[-1].end+end
-        if start > end : return [ins for ins in self.actions if ins.end > start]+[ins for ins in self.actions if ins.end < end]
+        if start > end : return [ins for ins in self.actions if (ins.end > start) and ((ins.operation) if exclude_source_read else True)]+[ins for ins in self.actions if (ins.end < end) and ((ins.operation) if exclude_source_read else True)]
         else: return [ins for ins in self.actions if ins.end > start and ins.offset < end] 
     
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
@@ -230,11 +206,164 @@ def build(source : bytes, target : bps, metadata : bytes | bool = False) -> byte
     
     slice_time = 0
     while len(target) - offset: 
-        print(f"{offset} / {len(target)} | {len(patch)} / 352865 | {100-int(100*len(patch)/max(1, offset))}% | {len(str(round(length / (time.time()-slice_time if time.time()-slice_time else 1), 0)))}")
+        print(f"{offset} / {len(target)} | {len(patch)} / 352865 | {100-int(100*len(patch)/max(1, offset))}% | {len(str(round(length / (time.time()-slice_time if time.time()-slice_time else 1), 0)))} | {len(str(length))} | {(offset / len(target)) / (len(patch) / 352865)}")
         slice_time = time.time()
         
-        # the logistical mess is entirely within the real of not file efficiency but TIMING.
-        # the code takes HOURS TO COMPLETE. so we rewrite it again.
+        """
+        
+        for performance reasons we must not perform iterative exponential array index evaluation
+        apparently, this is horrible for efficiency. 
+        
+        We should only index, when we are confident that the data is not present at our current offset
+        
+        This code here should include any information that is not present in either files.
+        target_read is the least efficient of all actions, the logic below is honestly unlikely
+        to ever be required - but should it it is here.
+        
+        """
+        length = 1
+        if target[offset + length] not in target[:offset] and target[offset + length] not in source:
+            while target[offset + length] not in source: length += 1
+            length -= 1
+            patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length] 
+            offset += length
+            continue 
+        
+        """
+        
+        Here we have 64bit RLE detection, I can only imagine that this is what byuu used as I honestly
+        cannot understand his code yet. What I have done here is move the logical evaluations into lambdas
+        for readability, file size efficiency and concission. We divide with bitshifting to main integral values
+        and we compare looped data against dividended slices with slice comparison. Finally we perform another
+        slice comparison between the trailing bytes and the leading bytes of the loop.
+        
+        For true 64bit RLE this trailing factor is unimportant, HOWEVER, should it not impede on speed much
+        it is a neat feature to implement. 
+        
+        """
+        
+        rle_lambda = lambda: target[offset : offset + ((length >> 2) * 4)] == target[offset : offset + 4] * (length >> 2) and target[offset + ((length >> 2) * 4) : offset + length] == target[offset : (length - ((length >> 2) * 4)) % 4]
+        length = 1  
+        
+        if rle_lambda():
+            while rle_lambda() and offset + length < len(target):
+                length += 1
+            length -= 1
+            
+        """
+        
+        In early versions of the code I had length equal zero. Which I had realized would initally
+        create an empty byte array - thus leading to the loop suceeding every time. 
+        Then entering a whole logical mess ... Not what I had in mind. 
+        
+        The value of the length may change in time.
+        
+        
+        Naturally here is my solution: indexing if current compared offset does not equate to target
+        with gradual slice comparison. The data compared is much lower, however more checks are 
+        introduced this way. A compromise needed for this current level of hardware. 
+        when the slice evaluation fails, this means the data we are comparing is too large for the
+        evaluated offset. This failing allows us to garuntee we do not end up testing the data 
+        we just used. 
+        
+        Finally, should no new index be viable - an IndexError will be thrown as we attempt
+        to access data that simply does not exist. In which case we catch the error and break from our 
+        loop. Should the final value of the offset added to the length exceed the length of data we have to
+        access, then we may also need to exit the loop and perform a secondary check in order to ensure that we do 
+        not use an undetermined terminator as that will keep us in an eternal loop.
+        The value of the index is preserved and we now decrease the length by one to regain the length
+        that succeeded the final loop.
+        
+        """  
+        
+        
+        target_scope_lambda = lambda: target[offset : offset + length] == target[new_index : new_index + length]
+        source_scope_lambda = lambda: target[offset : offset + length] == source[new_index : new_index + length]
+        
+        adder = 1
+        
+        if target[offset : offset + length] in target[:offset]:
+            while True:
+                try:
+                    new_index = target[:offset].index(target[offset : offset + length])
+                    while (target_scope_lambda()) if offset + length <= len(target) else False:
+                        length <<= adder 
+                        adder <<= 1
+                except ValueError: break
+                if offset + length > len(target): 
+                    break
+            while not target_scope_lambda() or length > len(target): 
+                length >>= 1
+                
+            while target_scope_lambda():
+                length += 1
+                
+            length -= 1
+        
+        target_length = length
+        adder = 1
+        
+        if (target[offset : offset + length] in source) if length <= len(source) else False:
+            while True:
+                try:
+                    new_index = source.index(target[offset : offset + length])
+                    while (source_scope_lambda()) if length <= len(source) else False:
+                        length <<= adder 
+                        adder <<= 1
+                except ValueError: break
+                if offset + length > len(target): 
+                    break
+            while not source_scope_lambda() or length > len(source): 
+                length >>= 1
+                
+            while source_scope_lambda():
+                length += 1
+                
+            length -= 1
+        
+        source_length = length
+        
+        """
+        
+        now that we have got the lengths that we can achieve from target and source we must now begin
+        the encoding process. Which is simpler but still has some layes of sophistication to it.
+        
+        """
+        
+        source_subsection_lambda = lambda: target[offset : offset + length] in source[max(source_relative - adder, 0) : min(source_relative + adder, len(source))]
+        target_subsection_lambda = lambda: target[offset : offset + length] in target[max(target_relative - adder, 0) : min(target_relative + adder, len(target))]
+        
+        if source_length > target_length:
+            if new_index == offset:
+                patch += encode((length - 1) << 2)
+                offset += length 
+                continue
+            
+            adder = 1
+            while not source_subsection_lambda():
+                adder <<= 1
+            
+            relative = (source[max(source_relative - adder, 0) : min(source_relative + adder, len(source))].index(target[offset + length])) - (adder >> 1)
+            action = encode(((length - 1) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
+            if length > len(encode(abs(relative << 1) | (relative < 0))): 
+                patch += action
+                source_relative += relative + length 
+            else:
+                patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length] 
+            offset += length
+            
+        else: 
+            adder = 1
+            while not target_subsection_lambda():
+                adder <<= 1
+            relative = (target[max(target_relative - adder, 0) : min(target_relative + adder, len(target))].index(target[offset : offset + length])) - (adder >> 1)
+            action = encode(((length - 1) << 2) | 2) + encode(abs(relative << 1) | (relative < 0))
+            if length > len(encode(abs(relative << 1) | (relative < 0))): 
+                patch += action
+                target_relative += relative + length 
+            else:
+                patch += encode(((length - 1) << 2) | 1) + target[offset : offset + length] 
+            offset += length
     
     print(time.time()-begin)
     patch += crc(source).to_bytes(4, "little") + crc(target).to_bytes(4, "little")              # add footer checksums
