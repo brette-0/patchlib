@@ -27,12 +27,12 @@ def encode(number : int) -> bytes:
     """
     encoded = bytes()
     while True:
-                    x = number & 0x7f
-                    number >>= 7
-                    if number:
-                        encoded += x.to_bytes(1, "big")
-                        number -= 1
-                    else: return encoded + (0x80 | x).to_bytes(1, "big")
+        x = number & 0x7f
+        number >>= 7
+        if number:
+            encoded += x.to_bytes(1, "big")
+            number -= 1
+        else: return encoded + (0x80 | x).to_bytes(1, "big")
                     
 class bps:
     def __iter__(self): return iter(self.actions)
@@ -63,6 +63,11 @@ class bps:
             self.name, self.relative, self.source = name, relative, action & 1
             
     def __init__(self, patch : bytes, checks : bool = True, metadata : bool = True): 
+        if not isinstance(patch, bytes): raise TypeError("Original patch file must be bytes")
+        if not isinstance(checks, bool): raise TypeError("Checksum validation flag must be boolean")
+        if not isinstance(metadata, bool): raise TypeError("Metadata flag must be boolean")
+        if len(patch) < 19: raise ValueError("BPS is corrupt, invalid filesize")
+        
         self.source_checksum, self.target_checksum, self.patch_checksum = [patch[i:i+4 if i+4 else None][::-1].hex() for i in range(-12, 0, 4)]
         if checks and crc(patch[:-4]) != int(self.patch_checksum, 16): raise ChecksumMismatch("BPS file is corrupt!")
         patch = patch[4:-12]
@@ -77,45 +82,52 @@ class bps:
                 if x & 0x80: return decoded 
                 shift <<= 7
                 decoded += shift
-                
-        self.source_size, self.target_size, self.metadata_size = decode(), decode(), decode()
+        try:        
+            self.source_size, self.target_size, self.metadata_size = decode(), decode(), decode()
+        except IndexError:
+            raise ValueError("BPS has invalid sizes")
         
-        if metadata:
-            self.metadata = bytes() 
-            self.metadata_size = 0 
-        else:
+        if metadata and self.metadata_size:
             self.metadata = patch[:self.metadata_size]
-            patch = patch[self.metadata_size:]                
+            patch = patch[self.metadata_size:]        
+        else:
+            self.metadata = bytes() 
+            self.metadata_size = 0             
             
         self.actions = []
         offset = 0
-        while patch:
-            length = decode() 
-            action  = length & 3
-            length = (length >> 2) + 1 
-            
-            def add_source_read(): 
-                nonlocal length, action, offset, patch
-                self.actions.append(self.source_read(self, length, offset, f"Unnamed source read at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()}"))
-            
-            def add_target_read(): 
-                nonlocal length, action, offset, patch
-                payload = patch[:length]
-                patch = patch[length:]
-                self.actions.append(self.target_read(self, length, offset, f"Unnamed target read at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()}", payload))
-            
-            def add_relative_copy(): 
-                nonlocal length, action, offset, patch
-                relative = decode() 
-                relative = (-1 if relative & 1 else 1) * (relative >> 1)
-                self.actions.append(self.relative_action(self, length, offset, f"Unnamed {'target' if action & 1 else 'source'} copy at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()} and relative offset of {('-' if relative < 0 else '') + hex(relative)[2 + (relative < 0):].upper()}", relative, action))
-            
-            (add_source_read, add_target_read, add_relative_copy, add_relative_copy)[action]()
-            offset += length
+        try:
+            while patch:
+                length = decode() 
+                action  = length & 3
+                length = (length >> 2) + 1 
+                
+                def add_source_read(): 
+                    nonlocal length, action, offset, patch
+                    self.actions.append(self.source_read(self, length, offset, f"Unnamed source read at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()}"))
+                
+                def add_target_read(): 
+                    nonlocal length, action, offset, patch
+                    payload = patch[:length]
+                    patch = patch[length:]
+                    self.actions.append(self.target_read(self, length, offset, f"Unnamed target read at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()}", payload))
+                
+                def add_relative_copy(): 
+                    nonlocal length, action, offset, patch
+                    relative = decode() 
+                    relative = (-1 if relative & 1 else 1) * (relative >> 1)
+                    self.actions.append(self.relative_action(self, length, offset, f"Unnamed {'target' if action & 1 else 'source'} copy at {hex(offset)[2:].upper()} with length {hex(length)[2:].upper()} and relative offset of {('-' if relative < 0 else '') + hex(relative)[2 + (relative < 0):].upper()}", relative, action))
+                
+                (add_source_read, add_target_read, add_relative_copy, add_relative_copy)[action]()
+                offset += length
+        except KeyboardInterrupt:
+            pass 
+        except:
+            raise ValueError("BPS file is corrupt!")
         if sum(tuple(action.length for action in self.actions)) != self.target_size:
             raise ContinuityError("BPS file is corrupt!")
         
-    def to_bytes(self, metadata : bool = False, checks : bool = True)->bytes:
+    def to_bytes(self, metadata : bool = False)->bytes:
         """process bps object into encoded file
 
         Args:
@@ -125,6 +137,8 @@ class bps:
         Returns:
             bytes: encoded bps file
         """
+        if not isinstance(metadata, bool): raise TypeError("metadata flag must be boolean")
+        
         contents = bytes() 
         for action in self: 
             contents += encode(((action.length - 1) << 2) + action.operation)
@@ -146,7 +160,7 @@ class bps:
         if start > end : return [ins for ins in self.actions if (ins.end > start) and ((ins.operation) if exclude_source_read else True)]+[ins for ins in self.actions if (ins.end < end) and ((ins.operation) if exclude_source_read else True)]
         else: return [ins for ins in self.actions if ins.end > start and ins.offset < end] 
     
-def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = False) -> tuple | bytes: 
+def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool | bytes = False) -> tuple | bytes: 
     """apply a bps object to the required source file.
 
     Args:
@@ -162,6 +176,21 @@ def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = F
     Returns:
         tuple | bytes: patched file, or combination of patched file with metadata
     """
+    
+    if isinstance(metadata, bytes):
+        applied_metadata = bytes 
+        metadata = True
+    else: 
+        applied_metadata = patch.metadata
+    
+    if not isinstance(source, bytes): raise TypeError("Source file must be array of bytes")
+    if not isinstance(patch, bps): raise TypeError("Patch must be normalized bps object")
+    if not isinstance(checks, bool): raise TypeError("checksum validation flag must be boolean")
+    if not isinstance(metadata, bool): raise TypeError("metadata inclusion flag must be boolean or bytes")       
+    
+    # this is merely to catch user errors, in truth a patch MAY function with a different size (we can add a check?)
+    if len(source) != patch.source_size: raise ValueError("Wrong source file for this patch")
+    
     target, source_relative_offset, target_relative_offset = bytes(), 0, 0
     if checks and crc(source) != int(patch.source_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
     for action in patch:
@@ -181,7 +210,10 @@ def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool = F
                 loop = target[target_relative_offset:]
                 target += b"".join([loop for x in range(action.length // len(loop))]) + loop[:action.length % len(loop)]
             target_relative_offset += action.length
+    if len(target) != patch.target_size: raise ValueError("Wrong source file for this patch")
     if checks and crc(target) != int(patch.target_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
-    return (target, patch.metadata) if patch.metadata_size and metadata else (target)
+    return (target, applied_metadata) if patch.metadata_size and metadata else (target)
 
 
+def build(source : bytes, target : bytes, checks : bool = True, metadata : bool = False)->bytes:
+    raise NotImplementedError("patchlib.bps.build has been inevitably postponed")
