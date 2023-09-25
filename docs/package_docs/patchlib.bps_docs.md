@@ -3,12 +3,11 @@
 
 - ~~Total control of every byte in the IPS~~
 - Serializable objects for sharing/extended use
-- ~~Produces the *smallest* `bps` files of any `bps` handler~~
 - ~~Lightweight filesize sitting only at `17kb`~~  
-- ~~extendable scope to `0x100FFFE`, or standard `0xFFFFFF`~~
+- Checksum validation bypass *(unreccomended)*
 
-## NPS Handling
-`patchlib` is useful for *all* elements of `bps` handling, even some that are likely to be left unused.
+## BPS Handling
+`patchlib` is useful for *most* elements of `bps` handling, even some that are likely to be left unused.
 
 ```python
 from patchlib.bps import *	#import bps library
@@ -50,8 +49,8 @@ tuple_of_datasets = mod.remove("unnamed action at 1984 - 2010 | 26")	#removing b
 ```
 Other ways to access the `actions` in a `bps` may be index specification or slices, or using the `__iter__` method with `for`:
 ```python
-acts = mod.instances[20]
-acts = mod.instances[20:30]
+acts = mod.actions[20]
+acts = mod.actions[20:30]
 
 acts = [acts for acts in mod if acts.length > 100]
 for a in mod
@@ -69,7 +68,7 @@ This `Exception` will raise when the task demands an action that would break the
 
 ## Methods
 
-The `apply` method takes an `ips` object and a `bytes` object for the base file.
+The `apply` method takes an `bps` object and a `bytes` object for the base file.
 ```python
 with open("Super Mario World (USA).sfc", "rb") as f:
 	base = f.read()

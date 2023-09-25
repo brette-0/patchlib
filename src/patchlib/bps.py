@@ -160,6 +160,114 @@ class bps:
         if start > end : return [ins for ins in self.actions if (ins.end > start) and ((ins.operation) if exclude_source_read else True)]+[ins for ins in self.actions if (ins.end < end) and ((ins.operation) if exclude_source_read else True)]
         else: return [ins for ins in self.actions if ins.end > start and ins.offset < end] 
     
+    def create(self, operation : int, offset : int, length : int, relative : int = None, payload : bytes = None, override : bool = False):
+        """_summary_
+
+        Args:
+            action (int): _description_
+            offset (int): _description_
+            length (int): _description_
+            relative (int, optional): _description_. Defaults to None.
+            payload (bytes, optional): _description_. Defaults to None.
+
+        Raises:
+            TypeError: _description_
+        """
+        if not isinstance(operation, int): raise TypeError
+        if not isinstance(length, int): raise TypeError
+        if not isinstance(offset, int): raise TypeError
+        if not isinstance(relative, int) if not relative is None else False: raise TypeError
+        if not isinstance(payload, bytes) if not relative is None else False: raise TypeError
+        if not isinstance(override, bool): raise TypeError
+        
+        if payload:
+            if len(payload) != length: raise ValueError("payload is not of specified length")
+    
+        action = abs(action & 3)
+        clashes = self.range(offset, offset + length, True)
+        if len(clashes):
+            if not override: raise ContinuityError("Cannot write new data, existing non-source_read actions are present at this range")
+            source_relative = target_relative = 0
+        
+            if clashes[0].offset < offset: 
+                if clashes[0].operation & 2:
+                    clashes[1].relative += offset - clashes[0].offset
+                else:
+                    clashes[0].payload = clashes[0].payload[:offset - clashes[0].offset]
+                clashes[0].length = offset - clashes.offset[0] 
+            else: 
+                del clashes[0]
+                clashes.insert(0, None)
+                
+            if clashes[-1].end > offset + length: 
+                if clashes[-1].operation & 2:
+                    clashes[-1].relative += clashes[-1].end - (offset + length)
+                else:
+                    clashes[-1].payload = clashes[-1].payload[clashes[-1].end - (offset + length):]
+                clashes[-1].length = clashes[-1].end - (offset + length) 
+            else:
+                del clashes[-1]
+                clashes.append(None)
+                
+            for act in clashes[1:-1]:
+                if act.operation & 2:
+                    if act.operaion & 1:
+                        target_relative += act.relative 
+                    else:
+                        source_relative += act.relative
+                del act
+            if source_relative:
+                for act in self.range(offset + length, None, True):
+                    if act.operation == 2:
+                        act.relative += source_relative
+                        break 
+            if target_relative:
+                for act in self.range(offset + length, None, True):
+                    if act.operation == 3:
+                        act.relative += target_relative
+                        break 
+        if operation & 2:
+            action = self.relative_action(self, length, offset, "None", relative, operation & 1)
+        elif operation & 1:
+            action = self.target_read(self, length, offset, "Name", payload)
+        else:
+            action = self.source_read(self, length, offset, "None")
+                
+        self.actions.insert(self.range(offset - 1, offset, False), action)
+    
+    def delete(self, actions : target_read | relative_action | tuple | list | str | int, _instream : list = []) -> dict:
+        """delete action(s) from a bps
+
+        Args:
+            action (target_read | relative_action | tuple | list | str | int): offset or name of action, or action itself, or array of actions to be deleted
+            _instream (list, optional): incoming structs if deletion is iterative. Defaults to [].
+        Returns:
+            dict: struct of action contents
+        """
+        stores = []
+        if not actions.operation: raise ContinuityError("cannot delete source_read action")
+        if isinstance(actions, (tuple, list)):
+            if not all(isinstance(a, self.action, str , int) for a in actions): raise ValueError("actions parameter containts non-patch results")
+            for act in actions: stores.append(self.delete(act))
+            
+        if isinstance(actions, str): 
+            for act in [act for act in self.actions if act.name == actions]: self.delete(act)
+        
+        if isinstance(actions, int):
+            actions = self.get(actions)
+        
+        if isinstance(actions, (self.action, self.relative_action, self.target_read)):
+            store = {"operation" : actions.operation, "offset" : actions.offset, "length" : actions.length, "name" : actions.name}
+            if actions.operation & 2: 
+                store["relative"] = actions.relative
+                modify = [act for act in self.range(actions.offset, actions.offset + actions.length, True) if act.operation == actions.operation]
+                if len(modify): modify[0].relative += store["relative"]
+            else: store["payload"] = actions.payload
+            
+            del actions
+            return stores if stores else store
+            
+                    
 def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool | bytes = False) -> tuple | bytes: 
     """apply a bps object to the required source file.
 
