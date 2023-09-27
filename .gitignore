@@ -11,3 +11,5 @@ setup.py
 *.pyc
 *.bsz 
 *.srm 
+docs/filetype_docs/eps_docs.md
+src/patchlib/eps.py
