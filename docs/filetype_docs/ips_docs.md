@@ -4,7 +4,7 @@
 
 The `IPS` or `International Patching System` filetype was created in 1993 to express "diffs" between a controlled `base` file and a resultant `target` file. MS-DOS at this point was the most popular operating system and some versions could not store a `32 bit` number due to limitations of the time.
 
-The `IPS` filetype was developed my Japanese ["ROM-Hackers"](https://en.wikipedia.org/wiki/ROM_hacking) who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before mainstream ROM-Hacking communities were established such as [Super Mario World Central](https://www.smwcentral.net/) which stores the largest archive of [Super Mario World](https://www.mariowiki.com/Super_Mario_World) ROM-Hacks, and is the most popular use for this filetype.
+The `IPS` filetype was developed by Japanese ["ROM-Hackers"](https://en.wikipedia.org/wiki/ROM_hacking) who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before mainstream ROM-Hacking communities were established such as [Super Mario World Central](https://www.smwcentral.net/) which stores the largest archive of [Super Mario World](https://www.mariowiki.com/Super_Mario_World) ROM-Hacks, and is the most popular use for this filetype.
 
 **Popular IPS tools include:**
 
@@ -194,8 +194,8 @@ In conclusion, `ips` is designed for an older generation of consoles that were s
 Easiest question of them all, `ips` was just there when it needed to be. Because of `ips`'s common usage and popularity when ROMhacking was more niche than it was the filetype has been the face of early ROMhacking, `ips` is actually quite space efficient for most of these hacks, it fit's its scope perfectly. 
 
 In some cases, you may opt for `bps` over `ips` if the scope of the project would benefit from it, however for minor edits within the size of the base file there is commonly zero reason not to choose `ips` unless the file you are modding requires a higher reach. 
-### Why should I use `iplsuna` over `ips.py`?
-The main reason you should choose `patchlib` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `patchlib` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instance` class as well as a `name` attribute which can be used to annotate an `ips`.
+### Why should I use `patchlib.ips` over `ips.py`?
+The main reason you should choose `patchlib.ips` over `ips.py` is because *it does what ***every*** other **advanced** patching tool does*. After being passed the raw contents of an `ips` or initialising a blank canvas, `patchlib.ips` offers **total** control of the `ips`.  Each instance (diff) has the `size`, `data`, `rle flag`, and `diff-reach` stored in the `instance` class as well as a `name` attribute which can be used to annotate an `ips`.
 
 The benefit to all of this is that now we can *smartly* interact with the instances, we can access them with a variety of functions such as `get`, `range`or by accessing the `instances` attribute within the `ips` class which stores each `instance` by order of `offset`. We can also modify the individual `instance` with the `modify` method.
 

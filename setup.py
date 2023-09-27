@@ -4,7 +4,7 @@ setup(
     name="get_patchlib",
     #packages=["patchlib"],
     package_dir={"": "src"},
-    version="1.1",
+    version="1.6",
     description="Patch file handler",
     author="Brette",
     keywords="Patch file handler",

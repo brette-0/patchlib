@@ -10,9 +10,9 @@
 
  - [beat](https://www.romhacking.net/utilities/893/)
  - [Multipatch](https://www.romhacking.net/utilities/746/)
- - Tool 3
+ - [Floating IPS](https://www.romhacking.net/utilities/1040/)
 
-byuu developed [beat](https://www.romhacking.net/utilities/893/) alongside their `bps` filetype intended to be used in a 32bit Windows environment. [Multipatch](https://www.romhacking.net/utilities/746/) was designed for MacOSX and supports many patch filetypes including `bps`. `bps` does not have a long history like `ips` and much less tools has been developed as of writing this in 2023.
+byuu developed [beat](https://www.romhacking.net/utilities/893/) alongside their `bps` filetype intended to be used in a 32bit Windows environment. [Multipatch](https://www.romhacking.net/utilities/746/) was designed for MacOSX and supports many patch filetypes including `bps`. `bps` does not have a long history like `ips` and much less tools has been developed as of writing this in 2023. As of `2023` [Floating IPS](https://www.romhacking.net/utilities/1040/) is the most popular bps tool and includes ips as well and is generally considered one of the best patch tools there is.
 
 
 [ROM Patcher JS](https://www.marcrobledo.com/RomPatcher.js/), however eradicates the usage of executable "diff" appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being `xdelta` files that use `Xdelta3` format which requires an x64/ARM environment that most web services cannot offer)
@@ -121,20 +121,7 @@ However as `patchlib.bps` is a module, usage is determined by the user and there
 
 `***` *If the theory is correctly implemented, the patch will mostly be relative copy functions. Through understanding that segments of data will be repeated throughout the patch - choosing an optimal path reduces file size greatly.*
 
-Now that you know the rules, we can begin to create a `bps` file.
-```python
-    #Likely some technical behemoth
-```
-
-[Comment on adequacy of code]
-```python
-def makepatch(basefile,targetfile,outfile):
-	def get(File):
-		with open(File,"rb") as f:
-			return f.read()
-	with open(outfile,"wb") as f:
-		f.write(build(get(basefile),get(targetfile)))
-```
+#### ***Currently*** `patchlib.bps` ***has no short term plans for a build method.***
 
 ### Why do we sometimes use other patching filetypes?
 `ips` was the original patch filetype, however it complied to outdated hardware limitations that makes it often unsuitable for larger tasks. `bps` is not the immediate successor to `ips`, but it is the successor to `ups` also made by byuu. 
