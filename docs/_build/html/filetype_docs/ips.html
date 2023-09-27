@@ -4,19 +4,22 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>International Patching System &mdash; patchlib 1.0 documentation</title>
+  <title>International Patching System &mdash; patchlib 1.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Producer’s Notice" href="../Information/author.html" />
     <link rel="prev" title="patchlib.ips" href="../package_docs/ips.html" /> 
 </head>
 
@@ -58,6 +61,12 @@
 </ul>
 </li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Information/author.html">Producer’s Notice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/resources.html">Resources</a></li>
+</ul>
 
         </div>
       </div>
@@ -84,9 +93,9 @@
            <div itemprop="articleBody">
              
   <section id="international-patching-system">
-<h1>International Patching System<a class="headerlink" href="#international-patching-system" title="Permalink to this heading"></a></h1>
+<h1>International Patching System<a class="headerlink" href="#international-patching-system" title="Link to this heading"></a></h1>
 <section id="what-is-ips">
-<h2>What is IPS?<a class="headerlink" href="#what-is-ips" title="Permalink to this heading"></a></h2>
+<h2>What is IPS?<a class="headerlink" href="#what-is-ips" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">IPS</span></code> or <code class="docutils literal notranslate"><span class="pre">International</span> <span class="pre">Patching</span> <span class="pre">System</span></code> filetype was created in 1993 to express “diffs” between a controlled <code class="docutils literal notranslate"><span class="pre">base</span></code> file and a resultant <code class="docutils literal notranslate"><span class="pre">target</span></code> file. MS-DOS at this point was the most popular operating system and some versions could not store a <code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">bit</span></code> number due to limitations of the time.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">IPS</span></code> filetype was developed by Japanese “<a class="reference external" href="https://en.wikipedia.org/wiki/ROM_hacking">ROM-Hackers</a>” who wished to share their modifications in a way that did not promote or commit acts of digital piracy, these files were spread on file hosting/shareware and forum websites before mainstream ROM-Hacking communities were established such as <a class="reference external" href="https://www.smwcentral.net/">Super Mario World Central</a> which stores the largest archive of <a class="reference external" href="https://www.mariowiki.com/Super_Mario_World">Super Mario World</a> ROM-Hacks, and is the most popular use for this filetype.</p>
 <dl class="simple">
@@ -119,7 +128,7 @@
 <p><a class="reference external" href="https://www.marcrobledo.com/RomPatcher.js/">ROM Patcher JS</a>, however eradicates the usage of executable “diff” appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being <code class="docutils literal notranslate"><span class="pre">xdelta</span></code> files that use <code class="docutils literal notranslate"><span class="pre">Xdelta3</span></code> format which requires an x64/ARM environment that most web services cannot offer)</p>
 </section>
 <section id="how-does-it-work">
-<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this heading"></a></h2>
+<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Link to this heading"></a></h2>
 <p>Simple, an IPS file has a static Header reading <code class="docutils literal notranslate"><span class="pre">PATCH</span></code> and a Footer reading <code class="docutils literal notranslate"><span class="pre">EOF</span></code>. The middle of the IPS file is a series of unterminated series of bytes. These “instances” come in two forms in variable size.</p>
 <p><strong>Example of a noRLE Instance:</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">01</span> <span class="pre">23</span> <span class="pre">45</span> <span class="pre">00</span> <span class="pre">05</span> <span class="pre">67</span> <span class="pre">89</span> <span class="pre">AB</span> <span class="pre">CD</span> <span class="pre">EF</span></code></p>
@@ -133,7 +142,7 @@
 <p>Spaces in-between offsets beyond the size of the original file size are expected to be zeroes, drastically reducing file size and likely complexity too leading to faster handling. When not storing past the original file the space in between offsets stores the original file contents which are not included in the <code class="docutils literal notranslate"><span class="pre">ips</span></code> for both efficiency and integrity.</p>
 </section>
 <section id="how-to-read-apply-one">
-<h2>How to read/apply one?<a class="headerlink" href="#how-to-read-apply-one" title="Permalink to this heading"></a></h2>
+<h2>How to read/apply one?<a class="headerlink" href="#how-to-read-apply-one" title="Link to this heading"></a></h2>
 <p>Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="n">base</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">patch</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
     <span class="n">patch</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>                     <span class="c1">#trim header and footer</span>
@@ -255,34 +264,34 @@
 </div>
 </section>
 <section id="why-do-we-sometimes-use-other-patching-filetypes">
-<h2>Why do we sometimes use other patching filetypes?<a class="headerlink" href="#why-do-we-sometimes-use-other-patching-filetypes" title="Permalink to this heading"></a></h2>
+<h2>Why do we sometimes use other patching filetypes?<a class="headerlink" href="#why-do-we-sometimes-use-other-patching-filetypes" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">bps</span></code> for example, uses variable width offsets, and instead of immediate replacement it uses “actions” to move the data and perform selective “range” overwrites in order to achieve a goal with <em>variable</em> scope. <code class="docutils literal notranslate"><span class="pre">ips</span></code> has a reach of <code class="docutils literal notranslate"><span class="pre">16,842,750</span> <span class="pre">bytes</span></code>, however a true legal <code class="docutils literal notranslate"><span class="pre">ips</span></code> could not write beyond the <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">bit</span></code> maximum and therefore the maximum reach is truly <code class="docutils literal notranslate"><span class="pre">16,777,215</span> <span class="pre">bytes</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">ips</span></code> also is horribly inefficient at patching large files, some files may contain duplicates of the base code, which is not just horribly inefficient but also provides a security risk for the original file contents.  A simple <code class="docutils literal notranslate"><span class="pre">ips</span></code> integrity checker could be constructed to compare base contents to patch contents to see what resemblance there is .</p>
 <p>In conclusion, <code class="docutils literal notranslate"><span class="pre">ips</span></code> is designed for an older generation of consoles that were small and simplistic, as the scope of technology gradually increases we may see <code class="docutils literal notranslate"><span class="pre">bps</span></code> become irrelevant. Currently, and for much time, it is irrational to assume that <code class="docutils literal notranslate"><span class="pre">bps</span></code> can be made redundant however as it can reach up to a theoretical <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">exabytes</span></code> in reach.</p>
 </section>
 <section id="why-do-we-still-use-ips-if-better-filetypes-exist">
-<h2>Why do we still use <code class="docutils literal notranslate"><span class="pre">ips</span></code> if better filetypes exist?<a class="headerlink" href="#why-do-we-still-use-ips-if-better-filetypes-exist" title="Permalink to this heading"></a></h2>
+<h2>Why do we still use <code class="docutils literal notranslate"><span class="pre">ips</span></code> if better filetypes exist?<a class="headerlink" href="#why-do-we-still-use-ips-if-better-filetypes-exist" title="Link to this heading"></a></h2>
 <p>Easiest question of them all, <code class="docutils literal notranslate"><span class="pre">ips</span></code> was just there when it needed to be. Because of <code class="docutils literal notranslate"><span class="pre">ips</span></code>’s common usage and popularity when ROMhacking was more niche than it was the filetype has been the face of early ROMhacking, <code class="docutils literal notranslate"><span class="pre">ips</span></code> is actually quite space efficient for most of these hacks, it fit’s its scope perfectly.</p>
 <p>In some cases, you may opt for <code class="docutils literal notranslate"><span class="pre">bps</span></code> over <code class="docutils literal notranslate"><span class="pre">ips</span></code> if the scope of the project would benefit from it, however for minor edits within the size of the base file there is commonly zero reason not to choose <code class="docutils literal notranslate"><span class="pre">ips</span></code> unless the file you are modding requires a higher reach.</p>
 </section>
 <section id="why-should-i-use-patchlib-over-ips-py">
-<h2>Why should I use <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code>?<a class="headerlink" href="#why-should-i-use-patchlib-over-ips-py" title="Permalink to this heading"></a></h2>
+<h2>Why should I use <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code>?<a class="headerlink" href="#why-should-i-use-patchlib-over-ips-py" title="Link to this heading"></a></h2>
 <p>The main reason you should choose <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> over <code class="docutils literal notranslate"><span class="pre">ips.py</span></code> is because <em>it does what ***every**</em> other <strong>advanced</strong> patching tool does*. After being passed the raw contents of an <code class="docutils literal notranslate"><span class="pre">ips</span></code> or initialising a blank canvas, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> offers <strong>total</strong> control of the <code class="docutils literal notranslate"><span class="pre">ips</span></code>.  Each instance (diff) has the <code class="docutils literal notranslate"><span class="pre">size</span></code>, <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">rle</span> <span class="pre">flag</span></code>, and <code class="docutils literal notranslate"><span class="pre">diff-reach</span></code> stored in the <code class="docutils literal notranslate"><span class="pre">instance</span></code> class as well as a <code class="docutils literal notranslate"><span class="pre">name</span></code> attribute which can be used to annotate an <code class="docutils literal notranslate"><span class="pre">ips</span></code>.</p>
 <p>The benefit to all of this is that now we can <em>smartly</em> interact with the instances, we can access them with a variety of functions such as <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">range``or</span> <span class="pre">by</span> <span class="pre">accessing</span> <span class="pre">the</span> <span class="pre">``instances</span></code> attribute within the <code class="docutils literal notranslate"><span class="pre">ips</span></code> class which stores each <code class="docutils literal notranslate"><span class="pre">instance</span></code> by order of <code class="docutils literal notranslate"><span class="pre">offset</span></code>. We can also modify the individual <code class="docutils literal notranslate"><span class="pre">instance</span></code> with the <code class="docutils literal notranslate"><span class="pre">modify</span></code> method.</p>
 <p>Moreover, the project is being actively worked on - and updates and new features should be expected. The code exceeds all known IPS tools and is not even at a release build yet, and it has full docs on the <a class="reference external" href="https://pypi.org/project/patchlib/">PyPI</a> and active developers in immediate contact on the <a class="reference external" href="https://discord.com/invite/3DYCru4dCV">Discord</a>!</p>
 </section>
 <section id="should-i-make-my-own-ips-handling-tool">
-<h2>Should I make my own <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling tool?<a class="headerlink" href="#should-i-make-my-own-ips-handling-tool" title="Permalink to this heading"></a></h2>
+<h2>Should I make my own <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling tool?<a class="headerlink" href="#should-i-make-my-own-ips-handling-tool" title="Link to this heading"></a></h2>
 <p>There is very minimal reason to do this. As it stands, even when <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetypes are being manipulated at a deep level, the tools provided are often not even fully used as rarely does the user exceed common <code class="docutils literal notranslate"><span class="pre">building</span></code> and <code class="docutils literal notranslate"><span class="pre">applying</span></code>. There is generally a surplus of tools, should you create your own <code class="docutils literal notranslate"><span class="pre">ips</span></code> tool there should be a reason for this, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>’s existence is to provide total control in a <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">JIPS</span></code> is forgivable as it runs in a Java runtime, meaning that it can run on devices that do not support <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3</span></code>. Because <code class="docutils literal notranslate"><span class="pre">JIPS</span></code> uses <code class="docutils literal notranslate"><span class="pre">Java</span></code>, the whole ideology being that it can run in <em>any</em> environment, this tool is very helpful to those who do not have an Operating System which any dedicated tool can support. The same <em>would</em> go for <code class="docutils literal notranslate"><span class="pre">ips.py</span></code> if <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> did not render it redundant.
 If you wish to make a tool, ensure that the benefits are not found immediately in someone else’s tools alone.  Once you can confirm there is a point to doing this baring scope, usability and cause, making an <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler makes complete sense.</p>
 </section>
 <section id="can-i-contribute-towards-patchlib">
-<h2>Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?<a class="headerlink" href="#can-i-contribute-towards-patchlib" title="Permalink to this heading"></a></h2>
+<h2>Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?<a class="headerlink" href="#can-i-contribute-towards-patchlib" title="Link to this heading"></a></h2>
 <p>Yes! <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> GitHub allows for forks to be made and anyone with some <code class="docutils literal notranslate"><span class="pre">Python</span></code> skill can be included in the Project! In fact, there are many elements of the project left <strong>totally</strong> untouched that you could begin working on! If you are interested feel free in contacting on the <a class="reference external" href="https://discord.com/invite/3DYCru4dCV">Discord</a>!</p>
 </section>
 <section id="is-it-not-better-just-to-make-your-own-filetype">
-<h2>Is it not better just to make your own filetype?<a class="headerlink" href="#is-it-not-better-just-to-make-your-own-filetype" title="Permalink to this heading"></a></h2>
+<h2>Is it not better just to make your own filetype?<a class="headerlink" href="#is-it-not-better-just-to-make-your-own-filetype" title="Link to this heading"></a></h2>
 <p>This should be overall somewhat discouraged for these reasons:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ips</span></code> is standardized, people may not want to use your files/tools</p></li>
@@ -299,6 +308,7 @@ If you wish to make a tool, ensure that the benefits are not found immediately i
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../package_docs/ips.html" class="btn btn-neutral float-left" title="patchlib.ips" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Information/author.html" class="btn btn-neutral float-right" title="Producer’s Notice" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

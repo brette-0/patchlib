@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>patchlib.bps &mdash; patchlib 1.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="International Patching System" href="../filetype_docs/ips.html" />
+    <link rel="prev" title="patchlib.ips" href="ips.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            patchlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filetype_docs/ips.html">International Patching System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filetype_docs/bps.html">Beat Patching System</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Information/author.html">Producer’s Notice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/resources.html">Resources</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">patchlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/package_docs/bps.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="patchlib-bps">
+<h1><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code><a class="headerlink" href="#patchlib-bps" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code> is an in-dev <code class="docutils literal notranslate"><span class="pre">bps</span></code> handler, which is currently undergoing fundamental development and has no functioning garuntee yet.</p>
+<ul class="simple">
+<li><p>Serializable objects for sharing/extended use</p></li>
+<li><p>Lightweight filesize sitting only at <code class="docutils literal notranslate"><span class="pre">16kb</span></code></p></li>
+<li><p>Checksum validation bypass <em>(unreccomended)</em></p></li>
+</ul>
+<p><strong>BPS Handling</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib</span></code> is useful for <em>most</em> elements of <code class="docutils literal notranslate"><span class="pre">bps</span></code> handling, even some that are likely to be left unused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">patchlib.bps</span> <span class="kn">import</span> <span class="o">*</span>      <span class="c1">#import bps library</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;EXTRA MARIO BROS.ips&quot;</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">mod</span> <span class="o">=</span> <span class="n">bps</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>     <span class="c1">#construct bps object from file</span>
+</pre></div>
+</div>
+<p>We pass the file contents into the constructor, and can specify whether or not this <code class="docutils literal notranslate"><span class="pre">bps</span></code> should: perform checksum validation or include optional metadata. The methods within the <code class="docutils literal notranslate"><span class="pre">bps</span></code> class are just for <code class="docutils literal notranslate"><span class="pre">instance</span></code> handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#retrieve multiple offsets within a range</span>
+
+<span class="n">header</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>              <span class="c1">#here we retrieve all actions up to the 16th byte</span>
+<span class="n">PRG</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mh">0x8010</span><span class="p">)</span>              <span class="c1">#here we retrieve all actions from 16 to 0x8010</span>
+<span class="n">CHR</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mh">0x8010</span><span class="p">)</span>                 <span class="c1">#here we retrieve all actions from 0x8010 to the end</span>
+
+<span class="c1">#retrieve an instance from offset, or many with a shared or unique name</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1622</span><span class="p">)</span>                                   <span class="c1">#retrieve instance starting at offset 1622</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unnamed action at 1984 - 2010 | 26&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The default name on an <code class="docutils literal notranslate"><span class="pre">action</span></code> is <code class="docutils literal notranslate"><span class="pre">unnamed</span> <span class="pre">action</span> <span class="pre">at</span></code> to signify that it was assigned a name during construction or modification, then we get the <code class="docutils literal notranslate"><span class="pre">offset</span></code> to the <code class="docutils literal notranslate"><span class="pre">end</span></code> describing it’s range including it’s <code class="docutils literal notranslate"><span class="pre">size</span></code> at the end. The names do not affect how an <code class="docutils literal notranslate"><span class="pre">action</span></code> works, it merely aids readability of the file.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">action</span></code> may also be created and removed from a <code class="docutils literal notranslate"><span class="pre">bps</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#This code will insert the bytearray b&quot;Example&quot; at 1234</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">operation</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span> <span class="n">relative</span> <span class="o">=</span> <span class="o">-</span><span class="mi">200</span><span class="p">)</span>
+
+<span class="c1">#or with raw action...</span>
+<span class="n">MyAction</span> <span class="o">=</span> <span class="n">MyBPS</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">full_action</span> <span class="o">=</span> <span class="n">MyAction</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If an <code class="docutils literal notranslate"><span class="pre">action</span></code> needs to be removed, we have the <code class="docutils literal notranslate"><span class="pre">remove</span></code> function. This function does more than just remove an <code class="docutils literal notranslate"><span class="pre">action</span></code> however, it returns a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of every <code class="docutils literal notranslate"><span class="pre">attribute</span></code> in the <code class="docutils literal notranslate"><span class="pre">action</span></code>. Further, if the <code class="docutils literal notranslate"><span class="pre">discriminator</span></code> is a string and we have multiple <code class="docutils literal notranslate"><span class="pre">actions</span></code> it will remove them all and return a <code class="docutils literal notranslate"><span class="pre">tuple</span></code> storing all <code class="docutils literal notranslate"><span class="pre">actions</span></code> in ascending order by <code class="docutils literal notranslate"><span class="pre">offset</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># This code has not been tested</span>
+<span class="n">dict_of_data</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>                                                                                 <span class="c1">#removing by offset</span>
+<span class="n">tuple_of_datasets</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;unnamed action at 1984 - 2010 | 26&quot;</span><span class="p">)</span>    <span class="c1">#removing by name</span>
+</pre></div>
+</div>
+<p>Other ways to access the <code class="docutils literal notranslate"><span class="pre">actions</span></code> in a <code class="docutils literal notranslate"><span class="pre">bps</span></code> may be index specification or slices, or using the <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method with <code class="docutils literal notranslate"><span class="pre">for</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">acts</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">actions</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span>
+<span class="n">acts</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">actions</span><span class="p">[</span><span class="mi">20</span><span class="p">:</span><span class="mi">30</span><span class="p">]</span>
+
+<span class="n">acts</span> <span class="o">=</span> <span class="p">[</span><span class="n">acts</span> <span class="k">for</span> <span class="n">acts</span> <span class="ow">in</span> <span class="n">mod</span> <span class="k">if</span> <span class="n">acts</span><span class="o">.</span><span class="n">length</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">mod</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                <span class="n">act</span> <span class="o">=</span> <span class="n">i</span> <span class="p">;</span> <span class="k">break</span>
+</pre></div>
+</div>
+<p>Once the necessary jobs regarding the <code class="docutils literal notranslate"><span class="pre">bps</span></code> is complete, you can then create an array of bytes for it to be wrote to a file with <code class="docutils literal notranslate"><span class="pre">bps.to_bytes()</span></code>.</p>
+<p><strong>Exceptions</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ChecksumMismatch</span></code></p></li>
+</ul>
+<p>This <code class="docutils literal notranslate"><span class="pre">Exception</span></code> will raise when the checksum validation fails.
+- <code class="docutils literal notranslate"><span class="pre">ContinuityError</span></code></p>
+<p>This <code class="docutils literal notranslate"><span class="pre">Exception</span></code> will raise when the task demands an action that would break the continuity of <code class="docutils literal notranslate"><span class="pre">bps</span></code>.</p>
+<p><strong>Methods</strong></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">apply</span></code> method takes an <code class="docutils literal notranslate"><span class="pre">bps</span></code> object and a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object for the base file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Super Mario World (USA).sfc&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Call of Cthulu.bps&quot;</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">bps</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Call of Cthulu.sfc&quot;</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ips.html" class="btn btn-neutral float-left" title="patchlib.ips" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../filetype_docs/ips.html" class="btn btn-neutral float-right" title="International Patching System" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, BrettefromNesUniverse.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

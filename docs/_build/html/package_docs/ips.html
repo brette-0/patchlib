@@ -4,21 +4,23 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>patchlib.ips &mdash; patchlib 1.0 documentation</title>
+  <title>patchlib.ips &mdash; patchlib 1.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="International Patching System" href="../filetype_docs/ips.html" />
-    <link rel="prev" title="patchlib Documentation" href="../index.html" /> 
+    <link rel="prev" title="patchlib" href="../index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -53,6 +55,12 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../filetype_docs/ips.html">International Patching System</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Information/author.html">Producer’s Notice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/resources.html">Resources</a></li>
+</ul>
 
         </div>
       </div>
@@ -79,7 +87,7 @@
            <div itemprop="articleBody">
              
   <section id="patchlib-ips">
-<h1><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code><a class="headerlink" href="#patchlib-ips" title="Permalink to this heading"></a></h1>
+<h1><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code><a class="headerlink" href="#patchlib-ips" title="Link to this heading"></a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code> is the best <code class="docutils literal notranslate"><span class="pre">ips</span></code> file handler out there, while slower than it’s C++ counterparts. <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> can boast that it offers</p>
 <ul class="simple">
 <li><p>Total control of every byte in the IPS</p></li>
@@ -89,7 +97,7 @@
 <li><p>extendable scope to <code class="docutils literal notranslate"><span class="pre">0x100FFFE</span></code>, or standard <code class="docutils literal notranslate"><span class="pre">0xFFFFFF</span></code></p></li>
 </ul>
 <section id="ips-handling">
-<h2>IPS Handling<a class="headerlink" href="#ips-handling" title="Permalink to this heading"></a></h2>
+<h2>IPS Handling<a class="headerlink" href="#ips-handling" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">patchlib</span></code> is useful for <em>all</em> elements of <code class="docutils literal notranslate"><span class="pre">ips</span></code> handling, even some that are likely to be left unused.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">patchlib.ips</span> <span class="kn">import</span> <span class="o">*</span>          <span class="c1">#import ips library</span>
 
@@ -157,7 +165,7 @@ The “Total” control of <code class="docutils literal notranslate"><span clas
 </div>
 </section>
 <section id="exceptions">
-<h2>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this heading"></a></h2>
+<h2>Exceptions<a class="headerlink" href="#exceptions" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ScopeError</span></code>
 This <code class="docutils literal notranslate"><span class="pre">Exception</span></code> will raise when the task is infeasible given the limitations of <code class="docutils literal notranslate"><span class="pre">ips</span></code> as a system.</p></li>
@@ -166,7 +174,7 @@ This <code class="docutils literal notranslate"><span class="pre">Exception</spa
 </ul>
 </section>
 <section id="methods">
-<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this heading"></a></h2>
+<h2>Methods<a class="headerlink" href="#methods" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">apply</span></code> method takes an <code class="docutils literal notranslate"><span class="pre">ips</span></code> object and a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object for the base file.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Super Mario Bros. (World).nes&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
@@ -192,7 +200,7 @@ This <code class="docutils literal notranslate"><span class="pre">Exception</spa
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../index.html" class="btn btn-neutral float-left" title="patchlib Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../index.html" class="btn btn-neutral float-left" title="patchlib" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../filetype_docs/ips.html" class="btn btn-neutral float-right" title="International Patching System" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

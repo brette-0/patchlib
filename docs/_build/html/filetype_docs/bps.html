@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beat Patching System &mdash; patchlib 1.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Producer’s Notice" href="../Information/author.html" />
+    <link rel="prev" title="International Patching System" href="ips.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            patchlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../package_docs/ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../package_docs/bps.html"><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ips.html">International Patching System</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Beat Patching System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-bps">What is BPS?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#variable-width-decoding"><code class="docutils literal notranslate"><span class="pre">variable-width</span> <span class="pre">decoding</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#variable-width-encoding"><code class="docutils literal notranslate"><span class="pre">variable-width</span> <span class="pre">encoding</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#header-and-footer-extraction"><strong>Header and Footer extraction</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-read-and-apply-one"><strong>How to read and apply one?</strong></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-does-bps-building-work">How does <code class="docutils literal notranslate"><span class="pre">bps</span></code> building work?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-do-we-sometimes-use-other-patching-filetypes">Why do we sometimes use other patching filetypes?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#should-i-use-xdelta-over-bps">Should I use Xdelta over <code class="docutils literal notranslate"><span class="pre">bps</span></code>?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#can-i-contribute-towards-patchlib">Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Information/author.html">Producer’s Notice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Information/resources.html">Resources</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">patchlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Beat Patching System</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/filetype_docs/bps.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="beat-patching-system">
+<h1>Beat Patching System<a class="headerlink" href="#beat-patching-system" title="Link to this heading"></a></h1>
+<section id="what-is-bps">
+<h2>What is BPS?<a class="headerlink" href="#what-is-bps" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> was designed by Emulator enthusiast <a class="reference external" href="https://www.romhacking.net/forum/index.php?topic=32951.0">byuu</a>, who, with this solution, created the standard for patch files in the ROMhacking community. While in truth a successor to <a class="reference external" href="h">ups</a> , <code class="docutils literal notranslate"><span class="pre">bps</span></code> offers a level of sophisticated versatility that was not needed when <code class="docutils literal notranslate"><span class="pre">ips</span></code> was suitable for known ROMhacking scopes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> is designed for mainly three reasons, the first being that <code class="docutils literal notranslate"><span class="pre">ips</span></code> had a soft upper limit of about <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">MB</span></code> and therefore larger games would be unmodifiable if it were not for a successor. Secondly, <code class="docutils literal notranslate"><span class="pre">bps</span></code> does not <em>need</em> to store any <code class="docutils literal notranslate"><span class="pre">source</span></code> data beyond original file offset as it refers to <code class="docutils literal notranslate"><span class="pre">source</span></code> during patching. Finally, <code class="docutils literal notranslate"><span class="pre">bps</span></code> offers more efficient patching with incredibly low filesizes.</p>
+<dl class="simple">
+<dt><strong>Popular IPS tools include:</strong></dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/893/">beat</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/746/">Multipatch</a></p></li>
+<li><p><a class="reference external" href="https://www.romhacking.net/utilities/1040/">Floating IPS</a></p></li>
+</ul>
+</dd>
+</dl>
+<p>byuu developed <a class="reference external" href="https://www.romhacking.net/utilities/893/">beat</a> alongside their <code class="docutils literal notranslate"><span class="pre">bps</span></code> filetype intended to be used in a 32bit Windows environment. <a class="reference external" href="https://www.romhacking.net/utilities/746/">Multipatch</a> was designed for MacOSX and supports many patch filetypes including <code class="docutils literal notranslate"><span class="pre">bps</span></code>. <code class="docutils literal notranslate"><span class="pre">bps</span></code> does not have a long history like <code class="docutils literal notranslate"><span class="pre">ips</span></code> and much less tools has been developed as of writing this in 2023. As of <code class="docutils literal notranslate"><span class="pre">2023</span></code> <a class="reference external" href="https://www.romhacking.net/utilities/1040/">Floating IPS</a> is the most popular bps tool and includes ips as well and is generally considered one of the best patch tools there is.</p>
+<p><a class="reference external" href="https://www.marcrobledo.com/RomPatcher.js/">ROM Patcher JS</a>, however eradicates the usage of executable “diff” appliers/makers as the tool is made entirely in JavaScript and therefore can use mod files and base files in a browser. (The Exception being <code class="docutils literal notranslate"><span class="pre">xdelta</span></code> files that use <code class="docutils literal notranslate"><span class="pre">Xdelta3</span></code> format which requires an x64/ARM environment that most web services cannot offer)</p>
+</section>
+<section id="variable-width-decoding">
+<h2><code class="docutils literal notranslate"><span class="pre">variable-width</span> <span class="pre">decoding</span></code><a class="headerlink" href="#variable-width-decoding" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> uses a simple method to encode numerical information called ‘variable-width encoding. In a series of bytes, the MSB is a termination flag and remains unset whilst the data is being streamed into an output value. Once the MSB of a byte is set, that byte then contains the last value for that encoded number. Below is a method of how it works, however in production we access the entire patch by reference.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="n">encoded</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span><span class="nb">bytes</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Encoded data must be bytes object&quot;</span><span class="p">)</span>
+        <span class="n">number</span><span class="p">,</span><span class="n">shift</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="n">encoded</span><span class="p">:</span>                                        <span class="c1">#for each byte in our given data</span>
+                <span class="n">number</span> <span class="o">+=</span> <span class="p">(</span><span class="n">byte</span> <span class="o">&amp;</span> <span class="mh">0x7f</span><span class="p">)</span> <span class="o">*</span> <span class="n">shift</span>             <span class="c1">#increase number by data bits</span>
+                <span class="k">if</span> <span class="n">byte</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">:</span> <span class="k">return</span> <span class="p">(</span><span class="n">number</span><span class="o">&gt;&gt;</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">number</span> <span class="o">&amp;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">signed</span> <span class="k">else</span> <span class="n">number</span>                                  <span class="c1">#return if termination bytes set</span>
+                <span class="n">shift</span> <span class="o">&lt;&lt;=</span> <span class="mi">7</span>
+                <span class="n">number</span> <span class="o">+=</span> <span class="n">shift</span>
+</pre></div>
+</div>
+</section>
+<section id="variable-width-encoding">
+<h2><code class="docutils literal notranslate"><span class="pre">variable-width</span> <span class="pre">encoding</span></code><a class="headerlink" href="#variable-width-encoding" title="Link to this heading"></a></h2>
+<p>Here it entirely appropriate to pass an integer by value, this is the simple process to encode numerical information with our format, as you may expect it is merely bit masking and bit shifting with context based bit setting.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="n">number</span> <span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">()</span>                                                   <span class="c1">#Create empty bytes object to store variable-width encoded bytes</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>                                                                     <span class="c1">#Until we are finished</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">number</span> <span class="o">&amp;</span> <span class="mh">0x7f</span>                                               <span class="c1">#Using the 7 LSB of the number</span>
+                <span class="n">number</span> <span class="o">&gt;&gt;=</span> <span class="mi">7</span>                                                    <span class="c1">#And removing such data</span>
+                <span class="k">if</span> <span class="n">number</span><span class="p">:</span>                                                              <span class="c1">#If there is still source data to read</span>
+                        <span class="n">encoded</span> <span class="o">+=</span> <span class="n">x</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>     <span class="c1">#Append the data to our bytes object</span>
+                        <span class="n">number</span> <span class="o">-=</span> <span class="mi">1</span>                                                     <span class="c1">#Decrement by one to remove ambiguity</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#set termination bit and return</span>
+                        <span class="n">reurn</span> <span class="n">encoded</span> <span class="o">+</span> <span class="p">(</span><span class="mh">0x80</span> <span class="o">|</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="header-and-footer-extraction">
+<h2><strong>Header and Footer extraction</strong><a class="headerlink" href="#header-and-footer-extraction" title="Link to this heading"></a></h2>
+<p>The header simply stores the string <code class="docutils literal notranslate"><span class="pre">BPS1</span></code> to indicate filetype, followed by three encoded numbers for the expected sizes of (in chronological order): the desired source file, the desired target file, the contained metadata. Whilst not entirely common, a patch may store a metadata file which by spec should be an <code class="docutils literal notranslate"><span class="pre">xml</span></code>, however no <code class="docutils literal notranslate"><span class="pre">xml</span></code> functionality has been utilized and the metadata can be whatever filetype the user decides. The footer is simpler yet, it stores three small endian checksums for: the source file, the target file, the patch file inclusive of the previous two checksums.</p>
+<p># Patch Actions</p>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">ips</span></code>, <code class="docutils literal notranslate"><span class="pre">bps</span></code> does not simply write patch data from the offset to the target - but rather the instructions on how to create the result data from repositioned source, written and current target data. We call these <code class="docutils literal notranslate"><span class="pre">actions</span></code> There are four of these which vary in functionality which all are called from one main function used to determine the required operation.</p>
+</section>
+<section id="how-to-read-and-apply-one">
+<h2><strong>How to read and apply one?</strong><a class="headerlink" href="#how-to-read-and-apply-one" title="Link to this heading"></a></h2>
+<p>Here it will be demonstrated in very simple Python, but annotated well even when the code is verbose.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="n">patch</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">source</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">decode</span><span class="p">():</span>
+                <span class="k">nonlocal</span> <span class="n">patch</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span><span class="nb">bytes</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Encoded data must be bytes object&quot;</span><span class="p">)</span>
+                        <span class="n">number</span><span class="p">,</span><span class="n">shift</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+                        <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="n">encoded</span><span class="p">:</span>
+                                <span class="n">number</span> <span class="o">+=</span> <span class="p">(</span><span class="n">byte</span> <span class="o">&amp;</span> <span class="mh">0x7f</span><span class="p">)</span> <span class="o">*</span> <span class="n">shift</span>
+                                <span class="k">if</span> <span class="n">byte</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">:</span> <span class="k">return</span> <span class="n">number</span>
+                                <span class="n">shift</span> <span class="o">&lt;&lt;=</span> <span class="mi">7</span>
+                                <span class="n">number</span> <span class="o">+=</span> <span class="n">shift</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">12</span><span class="p">]</span>
+        <span class="n">output_offset</span> <span class="o">=</span> <span class="n">source_offset</span> <span class="o">=</span> <span class="n">target_offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">patch</span><span class="p">:</span>
+                <span class="n">length</span> <span class="o">=</span> <span class="n">decode</span><span class="p">()</span>
+                <span class="n">action</span> <span class="o">=</span> <span class="n">length</span> <span class="o">&amp;</span> <span class="mi">3</span>
+                <span class="n">length</span> <span class="o">=</span> <span class="p">(</span><span class="n">length</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">+=</span> <span class="n">source</span><span class="p">[</span><span class="n">output_offset</span> <span class="p">:</span> <span class="n">output_offset</span> <span class="o">+</span> <span class="n">length</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">target</span> <span class="o">+=</span> <span class="n">patch</span><span class="p">[:</span><span class="n">length</span><span class="p">]</span>
+                        <span class="n">patch</span> <span class="o">=</span> <span class="n">patch</span><span class="p">[</span><span class="n">length</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">relative</span> <span class="o">=</span> <span class="n">decode</span><span class="p">()</span>
+                        <span class="n">relative</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span>  <span class="k">if</span>  <span class="n">relative</span>  <span class="o">&amp;</span>  <span class="mi">1</span>  <span class="k">else</span>  <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">relative</span>  <span class="o">&gt;&gt;</span>  <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">source_offset</span> <span class="o">+=</span> <span class="n">relative</span>
+                        <span class="n">target</span> <span class="o">+=</span> <span class="n">source</span><span class="p">[</span><span class="n">source_offset</span> <span class="p">:</span> <span class="n">source_offset</span> <span class="o">+</span> <span class="n">length</span><span class="p">]</span>
+                        <span class="n">source_offset</span> <span class="o">+=</span> <span class="n">length</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="n">relative</span> <span class="o">=</span> <span class="n">decode</span><span class="p">()</span>
+                        <span class="n">relative</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span>  <span class="k">if</span>  <span class="n">relative</span>  <span class="o">&amp;</span>  <span class="mi">1</span>  <span class="k">else</span>  <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">relative</span>  <span class="o">&gt;&gt;</span>  <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">target_offset</span>  <span class="o">+=</span> <span class="n">relative</span>
+                        <span class="k">if</span>  <span class="n">target_offset</span> <span class="o">+</span> <span class="n">length</span> <span class="o">&lt;</span>  <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+                                <span class="n">target</span> <span class="o">+=</span> <span class="n">target</span><span class="p">[</span><span class="n">target_offset</span> <span class="p">:</span> <span class="n">target_offset</span> <span class="o">+</span> <span class="n">length</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">loop</span> <span class="o">=</span> <span class="n">target</span><span class="p">[</span><span class="n">target_offset</span><span class="p">:]</span>
+                                <span class="n">target</span> <span class="o">+=</span>  <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">loop</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span> <span class="o">//</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop</span><span class="p">))])</span> <span class="o">+</span> <span class="n">loop</span><span class="p">[:</span><span class="n">length</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop</span><span class="p">)]</span>
+                        <span class="n">target_offset</span> <span class="o">+=</span> <span class="n">length</span>
+                <span class="k">return</span> <span class="n">target</span>
+</pre></div>
+</div>
+<p>The code above accepts two <code class="docutils literal notranslate"><span class="pre">bytes</span></code> objects and will return `` bytes`` object which could be parsed into a <code class="docutils literal notranslate"><span class="pre">file</span></code> object.  If you only needed this data for patching then you could :</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">patchfile</span><span class="p">(</span><span class="n">modfile</span><span class="p">,</span><span class="n">basefile</span><span class="p">,</span><span class="n">outfile</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">File</span><span class="p">):</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">File</span><span class="p">,</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">base</span><span class="p">),</span><span class="n">get</span><span class="p">(</span><span class="n">mod</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>However as <code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code> is a module, usage is determined by the user and therefore despite the applications beyond standard usage being nothing short of eccentric does not invalidate the intentions.</p>
+<section id="how-does-bps-building-work">
+<h3>How does <code class="docutils literal notranslate"><span class="pre">bps</span></code> building work?<a class="headerlink" href="#how-does-bps-building-work" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> constructing is much more detailed than <code class="docutils literal notranslate"><span class="pre">bps</span></code> applying,  as we have to account for the following things:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">target_copy</span></code> overlapping checks must always be checked first</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source_read</span></code> takes priority over <code class="docutils literal notranslate"><span class="pre">source_copy</span></code> only if optimal.</p></li>
+<li><p>Electing the closest relatives allows for smaller pointers.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">*</span></code> <em>byuu’s method to obsoleting RLE in patching was self-referential ``target_copy`` actions. Allowing the newly generated data to be accessed immediately for the output.</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">**</span></code> <em>while it may initially seem obvious, if more data can be accessed elsewhere for this offset then ``source_read`` is unpreferable, however if this is not the case then ``source_read`` should then be chosen due to it being pointer-less</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">***</span></code> <em>If the theory is correctly implemented, the patch will mostly be relative copy functions. Through understanding that segments of data will be repeated throughout the patch - choosing an optimal path reduces file size greatly.</em></p>
+<blockquote>
+<div><p><strong>Currently</strong> <code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code> <strong>has no short term plans for a build method.</strong></p>
+</div></blockquote>
+</section>
+<section id="why-do-we-sometimes-use-other-patching-filetypes">
+<h3>Why do we sometimes use other patching filetypes?<a class="headerlink" href="#why-do-we-sometimes-use-other-patching-filetypes" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ips</span></code> was the original patch filetype, however it complied to outdated hardware limitations that makes it often unsuitable for larger tasks. <code class="docutils literal notranslate"><span class="pre">bps</span></code> is not the immediate successor to <code class="docutils literal notranslate"><span class="pre">ips</span></code>, but it is the successor to <code class="docutils literal notranslate"><span class="pre">ups</span></code> also made by byuu.</p>
+<p>Currently, I do not have the theory on UPS or Xdelta, so no information in relation to these can be answered from me.</p>
+</section>
+<section id="should-i-use-xdelta-over-bps">
+<h3>Should I use Xdelta over <code class="docutils literal notranslate"><span class="pre">bps</span></code>?<a class="headerlink" href="#should-i-use-xdelta-over-bps" title="Link to this heading"></a></h3>
+<p>While my knowledge on Xdelta is essentially none, <code class="docutils literal notranslate"><span class="pre">bps</span></code> has some advantages over Xdelta - being that <code class="docutils literal notranslate"><span class="pre">bps</span></code> under no circumstances will demand a <code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">bit</span></code> environment due to Xdelta3’s <code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">bit</span></code> exclusive method for encoding. <code class="docutils literal notranslate"><span class="pre">bps</span></code> has theoretical functionality for systems with a higher bitsize than <code class="docutils literal notranslate"><span class="pre">64</span></code> despite working on lower systems.</p>
+<p>### Should I make my own <code class="docutils literal notranslate"><span class="pre">bps</span></code> handling tool?
+As of this being written up there are not too may <code class="docutils literal notranslate"><span class="pre">bps</span></code> handlers compared to the likes of <code class="docutils literal notranslate"><span class="pre">ips</span></code>. If there is some way, be it operating system or technical feature, that <code class="docutils literal notranslate"><span class="pre">bps</span></code> has been left unfulfilled it may be logical to create these tools.</p>
+</section>
+<section id="can-i-contribute-towards-patchlib">
+<h3>Can I contribute towards <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>?<a class="headerlink" href="#can-i-contribute-towards-patchlib" title="Link to this heading"></a></h3>
+<p>Yes! <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> GitHub allows for forks to be made and anyone with some <code class="docutils literal notranslate"><span class="pre">Python</span></code> skill can be included in the Project! In fact, there are many elements of the project left <strong>totally</strong> untouched that you could begin working on! If you are interested feel free in contacting on the [Discord](<a class="reference external" href="https://discord.com/invite/3DYCru4dCV">https://discord.com/invite/3DYCru4dCV</a>)!
+### Is it not better just to make your own filetype?</p>
+<p>This should be overall somewhat discouraged for these reasons:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bps</span></code> is standardized, people may not want to use your files/tools</p></li>
+<li><p>It is quite likely that <code class="docutils literal notranslate"><span class="pre">bps</span></code> could solve this, people <em>will</em> use that instead</p></li>
+<li><p>It creates some sort of proprietary sense to it, which may deter users.</p></li>
+<li><p>If tool sharing is too slow for demand, users may share original files</p></li>
+</ul>
+<p>If people do not want to use your tools then the project’s popularity will be stunted, if people construct a <code class="docutils literal notranslate"><span class="pre">bps</span></code> between the base and result file then nobody will feel obliged to use <em>your format or tool</em>. In the world of common base files it is natural to assume a universal format for manipulation, for this we opt for universal filetypes, limiting control only works for immediate distribution.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ips.html" class="btn btn-neutral float-left" title="International Patching System" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Information/author.html" class="btn btn-neutral float-right" title="Producer’s Notice" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, BrettefromNesUniverse.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

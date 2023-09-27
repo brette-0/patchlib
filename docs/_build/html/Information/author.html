@@ -4,19 +4,23 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Producer’s Notice &mdash; patchlib 1.0 documentation</title>
+  <title>Producer’s Notice &mdash; patchlib 1.1 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
+    <link rel="prev" title="Beat Patching System" href="../filetype_docs/bps.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,10 +45,18 @@
               <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../package_docs/ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../package_docs/bps.html"><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../filetype_docs/ips.html">International Patching System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filetype_docs/bps.html">Beat Patching System</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Information:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Producer’s Notice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">Resources</a></li>
 </ul>
 
         </div>
@@ -72,7 +84,7 @@
            <div itemprop="articleBody">
              
   <section id="producer-s-notice">
-<h1>Producer’s Notice<a class="headerlink" href="#producer-s-notice" title="Permalink to this heading"></a></h1>
+<h1>Producer’s Notice<a class="headerlink" href="#producer-s-notice" title="Link to this heading"></a></h1>
 <p>Hi there! My name is Brette and I am the Developer of this module and I have a little story to tell if you continue reading about how this project came to be.</p>
 <p>I was originally given the task of an auto-patch Discord bot that would process these patches against a comapred ROM, for this I needed a basic understanding of how the <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetype worked and I spent about a week consitently researching this.</p>
 <p>After much time into the projects development I had got in contact witht he owner of the Super Mario Bros 3 Modding Discord and suggested that I make a bot which countered Piracy and if a ROM was present, it would create an <code class="docutils literal notranslate"><span class="pre">ips</span></code> file for it, while it has the drawbacks of essentially creating other games (assuming they are larger than Super Mario Bros 3) this is to be expected and appreciated as impossible for me to control.</p>
@@ -80,13 +92,25 @@
 <p>After this I had learned much more Python, as of writing this I am yet to have reached adulthood and am a hobbyist developer who as of writing this can only code in Python and MOS 6502 Assembly. During this time period the AI Assistant ChatGPT was released to the public and I soon found a better teacher than I ever had, while it often suggested minor optimizaitons - the effortless nature in which I recieved answers for any queery I had made learning a fast and fun process which improved my worth ethic, mentality and undoubtly the product quality too.</p>
 <p>After reviewing my code on both my Discord bots I had concluded that the code was simply inadequate, I am no perfectionist but if there is an identifiable problem then there is a conjurable solution. After at least a dozen attempts at creating optimized build code, countless tests on <code class="docutils literal notranslate"><span class="pre">instance</span></code> handling with all of it’s unnecessarily helpful and complicated optional kwargs I had created the best <code class="docutils literal notranslate"><span class="pre">ips</span></code> handler the world has seen.</p>
 <p>I have much to be greatful for, if it were not for the incredibly awkardly wrote <code class="docutils literal notranslate"><span class="pre">ips</span></code> filetype docs that I stumbled on when researching for file structure I would never have gotten to where I am. No one should go through the struggle that I did to get where I am, for this I create the best tool that I can and I offet detailed explanatory documentation on the filetype and the module such that no one should ever be confused about this again.</p>
-<p>In it’s current state, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> only supports <code class="docutils literal notranslate"><span class="pre">ips</span></code>, however there are immediate plans to approach the different <code class="docutils literal notranslate"><span class="pre">patch</span></code> types with the same ideology and structure as <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code>. If you have found this tool helpul whatsoever and have read up until this part, please feel free to join the <a class="reference external" href="https://www.discord.gg/3DYCru4dCV">Discord Server</a> where you can see all of my products, including the aforementioned bots that use this module!</p>
+<p>After effectively completing <code class="docutils literal notranslate"><span class="pre">ips</span></code>, I decided that the next best move was to begin working on <code class="docutils literal notranslate"><span class="pre">bps</span></code>. Since then, I have progressed immensly as a developer and can honestly call my past attempts ill-faithed. In tandem with my attempts on <code class="docutils literal notranslate"><span class="pre">bps</span></code>, I was enlightened by the owner of the Super Mario Bros Discord server (of whom used to have Patchy - as of updating this they have removed it due to the abuse allegations within the server) about a patch file known as <code class="docutils literal notranslate"><span class="pre">nps</span></code>. From what I here, this was an <code class="docutils literal notranslate"><span class="pre">ips</span></code> clone that modified per-bank instead of per-rom. It is little wonder that this patch format did not take of, it simply does not solve the issue effectively.</p>
+<p>Had you the goal to surpass <code class="docutils literal notranslate"><span class="pre">ips</span></code> you would not use <code class="docutils literal notranslate"><span class="pre">ips</span></code>. You would programme an entirely new patching system - what they did here was likely an inexperienced effort to interact with a world unbeknownst to them. Despite my reasonable feelings to lean towards neglecting <code class="docutils literal notranslate"><span class="pre">nps</span></code> - it honestly costs nothing to integrate. However, I have not found this <code class="docutils literal notranslate"><span class="pre">nps</span></code> file nor any information on its specification. Should anyone know or find one, I am prepared to programme a handler for it like I did with <code class="docutils literal notranslate"><span class="pre">ips</span></code> and perhaps even a compiled GUI since it is so niche.</p>
+<p>After extensive research into <code class="docutils literal notranslate"><span class="pre">bps</span></code>, I was able to normalize the file after a long period of time. Now, I could understand the <code class="docutils literal notranslate"><span class="pre">bps</span></code> file down to its last byte - and here I found some of the constraints of what is considered the best patching filetype to ever exist. Know that, people who use dissasemblies will never encounter this constraint unless they are developing patches.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> is context-negligent. By that I mean, if there is information that can be copied from source or the current unfinished target then, typically, it will prefer that over storing the patch contents itself - which means that source information must always be a constant. This means, <code class="docutils literal notranslate"><span class="pre">bps</span></code> is unsuitable for those kinds of patches which exist to enhance the ROMhacking experience.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bps</span></code> suffices, in fact succeeds, as a production patch format, however it is terribly inadvisable not to be used as a development patch. For it may expect unmodified data in a modified file at an arbitrary offset which, when it was unmodified, had originally stored the contents needed to optimally create the target. After you have wrapped your head around that, you begin to understand why <code class="docutils literal notranslate"><span class="pre">bps</span></code> is not the be all end all of patches - more still can exist and potentially should!</p>
+<p>So I expect you want to know then, if <code class="docutils literal notranslate"><span class="pre">bps</span></code> file are context-negligent then why do we even have the ability to create and remove the actions within them? That is a good question, I cannot give a good reason as to why someone may feel the need to modify a <code class="docutils literal notranslate"><span class="pre">bps</span></code> file, however I am merely the tool maker and I have wrote this module in such a way that: if it is possible, then it can be done, if it can be done it will be done.</p>
+<p>If that is so then where is <code class="docutils literal notranslate"><span class="pre">patchlib.bps.build</span></code>? I know, the reason I left that unimplemented was due to the fact it had repulsively long building times even after an incredibly thoughtful amount of thorough refactoring. In consequence of making it faster, we actually made verbose patch files - and the whole point of <code class="docutils literal notranslate"><span class="pre">bps</span></code> is its context-negligent nature which prioritizes size over speed every time. It appeared that <cite>patchlib.bps.build</cite> was not able to get the <cite>patchlib.ips.build</cite> treatment.</p>
+<p>Therefore it naturally takes no priority, it is posisble that it may be added at a later date. Yet currently I cannot fathom a user or developer who requires a patch tool that completes at a rate (and this is no joke) ten thousand times slower. Even if the user has an obscure platform, it is still optimal to use ROMPatcherJS at this point. However, should that not be an option then it may be that I programme my own <code class="docutils literal notranslate"><span class="pre">bps</span></code> build code in <code class="docutils literal notranslate"><span class="pre">patchlib</span></code>.</p>
+<p>But I am more than a mimic, so I began planning my own patch filetype, which is <code class="docutils literal notranslate"><span class="pre">eps</span></code> or ‘Enhanced Patching System’. This will not use the self-referential and fixed-source methodology of <code class="docutils literal notranslate"><span class="pre">bps</span></code>. Which means that it will produce larger files for production hack ROMs. Therefore, this format should (and likely only would) be used for development patches. Ideally this should replace <code class="docutils literal notranslate"><span class="pre">ips</span></code> - yet in the world of persistence and legacy it may take time to overcome it. And surprisingly, <code class="docutils literal notranslate"><span class="pre">ips</span></code> still does the job for some systems.</p>
+<p>In it’s current state, <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> only supports <code class="docutils literal notranslate"><span class="pre">ips</span></code> and <code class="docutils literal notranslate"><span class="pre">bps</span></code>, however there are immediate plans to approach the different <code class="docutils literal notranslate"><span class="pre">patch</span></code> types with the same ideology and structure as <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code>. If you have found this tool helpul whatsoever and have read up until this part, please feel free to join the <a class="reference external" href="https://discord.gg/EwfEWcVtzp">Discord Server</a> where you can see all of my products, including the aforementioned bots that use this module!</p>
 </section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../filetype_docs/bps.html" class="btn btn-neutral float-left" title="Beat Patching System" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

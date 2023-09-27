@@ -4,16 +4,18 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>patchlib &mdash; patchlib 1.0 documentation</title>
+  <title>patchlib &mdash; patchlib 1.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=56dcb7b8"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -42,10 +44,12 @@
               <p class="caption" role="heading"><span class="caption-text">Subpackage Documentation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="package_docs/ips.html"><code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="package_docs/bps.html"><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Filetype Documentation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="filetype_docs/ips.html">International Patching System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filetype_docs/bps.html">Beat Patching System</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Information:</span></p>
 <ul>
@@ -91,17 +95,18 @@ each documented in detail in this repository, and installed on:
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">patchlib</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">patchlib</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">get_patchlib</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">get_patchlib</span></code></p></td>
 </tr>
 </tbody>
 </table>
 <ul class="simple">
-<li><p><em>Intended for Python 3.7 and above</em></p></li>
+<li><p><strong>Intended for Python 3.7 and above</strong></p></li>
 <li><p>Uses
 <a class="reference external" href="https://docs.python.org/3/library/importlib.html">importlib</a>
 for complete importing</p></li>
-<li><p>Currently can only use <code class="docutils literal notranslate"><span class="pre">ips</span></code> files.</p></li>
+<li><p>Uses <a class="reference external" href="https://docs.python.org/3/library/zlib.html">zlib</a> for <code class="docutils literal notranslate"><span class="pre">bps</span></code> <a class="reference external" href="https://en.wikipedia.org/wiki/Checksum">Checksum Validation</a></p></li>
+<li><p>Currently can only use <code class="docutils literal notranslate"><span class="pre">ips</span></code> and <code class="docutils literal notranslate"><span class="pre">bps</span></code> files.</p></li>
 </ul>
 <table class="docutils align-default">
 <thead>
@@ -115,18 +120,18 @@ for complete importing</p></li>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>IPS</p></td>
-<td><p><a class="reference external" href="https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips/__init__.py">patchlib.ips</a></p></td>
+<td><p><a class="reference external" href="https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips.py">patchlib.ips</a></p></td>
 <td><p><a class="reference internal" href="package_docs/ips.html"><span class="doc">patchlib.ips_docs</span></a></p></td>
 <td><p>1.0</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">17KB</span></code></p></td>
 <td><p><a class="reference internal" href="filetype_docs/ips.html"><span class="doc">IPS</span></a></p></td>
 </tr>
 <tr class="row-odd"><td><p>BPS</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code></p></td>
-<td><p>Not yet</p></td>
-<td><p>alpha</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">5.85KB</span></code></p></td>
-<td><p>None</p></td>
+<td><p><a class="reference external" href="https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/ips.py">patchlib.ips</a></p></td>
+<td><p><a class="reference internal" href="package_docs/bps.html"><span class="doc">patchlib.bps_docs</span></a></p></td>
+<td><p>0.6</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">16KB</span></code></p></td>
+<td><p><a class="reference internal" href="filetype_docs/bps.html"><span class="doc">BPS</span></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Xdelta</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">patchlib.xdelta</span></code></p></td>
@@ -170,8 +175,8 @@ for complete importing</p></li>
 <td><p>None</p></td>
 <td><p>None</p></td>
 </tr>
-<tr class="row-even"><td><p>Luna</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">patchilb.luna</span></code></p></td>
+<tr class="row-even"><td><p>EPS</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">patchlib.eps</span></code></p></td>
 <td><p>Not yet</p></td>
 <td><p>None</p></td>
 <td><p>None</p></td>
@@ -182,18 +187,18 @@ for complete importing</p></li>
 <p>Using <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">patchlib</span></code> will install all packages with the
 <code class="docutils literal notranslate"><span class="pre">importlib</span></code> module. <code class="docutils literal notranslate"><span class="pre">patchlib</span></code> provides no context abundant methods
 and relies on the package being specified.</p>
-<p><code class="docutils literal notranslate"><span class="pre">Luna</span></code> serialized class handling may be implemented at a later point
-in time once enough of the crucial patch filetypes have been completed.</p>
 <p><a class="reference external" href="https://github.com/BrettefromNesUniverse/patchlib/tree/main/docs">docs</a>
 applies only to the <a class="reference external" href="https://pypi.org/project/patchlib/">working
 build</a> <em>and therefore may not
 reflect the</em> <a class="reference external" href="https://github.com/BrettefromNesUniverse/patchlib/blob/main/src/patchlib/">open source
-versions</a>.
-<em>Contributions are open an encouraged, and will be release once the open build leaves exerpiment phase.</em></p>
-<p>In either <code class="docutils literal notranslate"><span class="pre">cmd</span></code> or <code class="docutils literal notranslate"><span class="pre">powershell</span></code> for Windows, and <code class="docutils literal notranslate"><span class="pre">terminal</span></code> for Posix/Unix Systems.</p>
+versions</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Currently only <code class="docutils literal notranslate"><span class="pre">patchlib.ips</span></code> is implemented, we are already working the next subpackage however and welcome contributions</p>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib.bps</span></code> is not fully tested and some features remain unimplemented.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">patchlib.eps</span></code> some installs contain leftover <code class="docutils literal notranslate"><span class="pre">eps</span></code> code which should not be used.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>

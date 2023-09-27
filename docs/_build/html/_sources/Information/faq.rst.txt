@@ -27,4 +27,8 @@ A: *The project is highly optimized where necessary, should you find a way to ma
 
 **Q: I have a suggestion for** ``patchlib`` **, how can I be heard?**
 
-A: *If you have something to say about* ``patchlib`` *then you can speak on the* `Discord Server <https://www.discord.gg/3DYCru4dCV>`_ *or* `Submit a Feature Request <https://github.com/BrettefromNesUniverse/patchlib/issues/new/choose>`_.
+A: *If you have something to say about* ``patchlib`` *then you can speak on the* `Discord Server <https://discord.gg/EwfEWcVtzp>`_ *or* `Submit a Feature Request <https://github.com/BrettefromNesUniverse/patchlib/issues/new/choose>`_.
+
+**Q: I was banned from your Discord and I don't know why and I still need help**
+
+A: *This means you did something exceptionally horrible and you will receive no help*

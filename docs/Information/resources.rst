@@ -1,7 +1,7 @@
 Resources
 #########
 
-As I began ROMhacking and developing this tool I of course became aware of communtiies and pre-existing documentation that I will store in these docs too as they are public domain articles. I will also link websites that have more information on this sort of thing and relevant communities in which you may ask more questions.
+As I began ROMhacking and developing this tool, I of course became aware of communtiies and pre-existing documentation that I will store in these docs too as they are public domain articles. I will also link websites that have more information on this sort of thing and relevant communities in which you may ask more questions.
 
 +---------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
 |`Download ZeroSoft IPS Guide <https://github.com/BrettefromNesUniverse/patchlib/raw/main/docs/resources/bps_spec.zip>`_                | `Visit Zophar's Domain <https://zerosoft.zophar.net/ips.php>`_                                               |
