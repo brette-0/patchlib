@@ -244,14 +244,15 @@ class ips:
         """
         Processes ips object into native `bytes` object.
         """
-        patch = b"" 
+        patch = bytearray(b"PATCH") 
         for ins in self.instances:
-            patch += ins.offset.to_bytes(3, "big")
-            if ins.rle: patch += b"\x00\x00" 
-            patch += ins.size.to_bytes(2, "big") 
-            if ins.rle: patch += ins.data[1]
-            else: patch += ins.data
-        return b"PATCH"+patch+b"EOF"
+            patch.append(ins.offset.to_bytes(3, "big"))
+            if ins.rle: patch.append(b"\x00\x00")
+            patch.append(ins.size.to_bytes(2, "big"))
+            if ins.rle: patch.append(ins.data[1])
+            else: patch.append(ins.data)
+        patch.append("EOF")
+        return patch
 
     def __iter__(self) -> iter: return iter(self.instances)
 
