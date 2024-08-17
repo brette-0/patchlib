@@ -302,22 +302,30 @@ def apply(source : bytes, patch : bps, checks : bool = True, metadata : bool | b
     target, source_relative_offset, target_relative_offset = bytes(), 0, 0
     if checks and crc(source) != int(patch.source_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
     for action in patch:
-        if action.operation == 0:
-            target += source[action.offset : action.end]
-        if action.operation == 1:
-            target += action.payload 
-        if action.operation == 2:
-            source_relative_offset += action.relative 
-            target += source[source_relative_offset : source_relative_offset + action.length] 
-            source_relative_offset += action.length
-        if action.operation == 3:
-            target_relative_offset += action.relative 
-            if target_relative_offset + action.length < len(target):
-                target += target[target_relative_offset: target_relative_offset + action.length]
-            else:
-                loop = target[target_relative_offset:]
-                target += b"".join([loop for x in range(action.length // len(loop))]) + loop[:action.length % len(loop)]
-            target_relative_offset += action.length
+        match action.operation:
+            case 0:
+                target += source[action.offset : action.end]
+                break
+
+            case 1:
+                target += action.payload
+                break
+            
+            case 2:
+                source_relative_offset += action.relative 
+                target += source[source_relative_offset : source_relative_offset + action.length] 
+                source_relative_offset += action.length
+                break
+
+            case 3:
+                target_relative_offset += action.relative 
+                if target_relative_offset + action.length < len(target):
+                    target += target[target_relative_offset: target_relative_offset + action.length]
+                else:
+                    loop = target[target_relative_offset:]
+                    target += b"".join([loop for x in range(action.length // len(loop))]) + loop[:action.length % len(loop)]
+                target_relative_offset += action.length
+                break
     if len(target) != patch.target_size: raise ValueError("Wrong source file for this patch")
     if checks and crc(target) != int(patch.target_checksum, 16): raise ChecksumMismatch("Source File is not suited to this Patch!")
     return (target, applied_metadata) if patch.metadata_size and metadata else (target)
