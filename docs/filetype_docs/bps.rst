@@ -84,18 +84,18 @@ Here it will be demonstrated in very simple Python, but annotated well even when
 			length = decode()
 			action = length & 3
 			length = (length >> 2) - 1
-			if length == 0:
+			if action == 0:
 				target += source[output_offset : output_offset + length]
-			if length == 1:
+			if action == 1:
 				target += patch[:length]
 				patch = patch[length:]
-			if length == 2:
+			if action == 2:
 				relative = decode()
 				relative = (-1  if  relative  &  1  else  1) * (relative  >>  1)
 				source_offset += relative 
 				target += source[source_offset : source_offset + length]
 				source_offset += length 
-			if length == 3:
+			if action == 3:
 				relative = decode()
 				relative = (-1  if  relative  &  1  else  1) * (relative  >>  1)
 				target_offset  += relative 
