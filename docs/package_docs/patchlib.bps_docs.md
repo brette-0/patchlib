@@ -1,10 +1,8 @@
 # `patchlib.bps`
-`patchlib.bps` is an in-dev `bps` handler, which is currently undergoing fundamental development and has no functioning garuntee yet.
+`patchlib.bps` is an in-dev `bps` handler, which is currently undergoing fundamental development and has no functioning guarantee yet.
 
-- ~~Total control of every byte in the IPS~~
-- Serializable objects for sharing/extended use
-- ~~Lightweight filesize sitting only at `17kb`~~  
-- Checksum validation bypass *(unreccomended)*
+- Serialisable objects for sharing/extended us
+- Checksum validation bypass *(not recommended)*
 
 ## BPS Handling
 `patchlib` is useful for *most* elements of `bps` handling, even some that are likely to be left unused.
@@ -12,10 +10,10 @@
 ```python
 from patchlib.bps import *	#import bps library
 
-with open("EXTRA MARIO BROS.ips","rb") as f:
+with open("Call of Cthulu.bps","rb") as f:
 	mod = f.read()
 
-mod = bps(mod, True, False)	#construct `ips` object from file
+mod = bps(mod, True, False)	#construct `bps` object from file
 ```
 We pass the file contents into the constructor, and can specify whether or not this `bps` should: perform checksum validation or include optional metadata. The methods within the `bps` class are just for `instance` handling:
 ```python
@@ -44,8 +42,8 @@ mod.create(full_action = MyAction)
 
 If an `instance` needs to be removed, we have the `remove` function. This function does more than just remove an `action` however, it returns a `dict` of every `attribute` in the `action`. Further, if the `discriminator` is a string and we have multiple `actions` it will remove them all and return a `tuple` storing all `actions` in ascending order by `offset`.
 ```python
-dict_of_data = mod.remove(1234)											#removing by offset
-tuple_of_datasets = mod.remove("unnamed action at 1984 - 2010 | 26")	#removing by name
+dict_of_data = mod.remove(1234)
+tuple_of_datasets = mod.remove("unnamed action at 1984 - 2010 | 26")
 ```
 Other ways to access the `actions` in a `bps` may be index specification or slices, or using the `__iter__` method with `for`:
 ```python
